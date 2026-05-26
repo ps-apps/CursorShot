@@ -1,48 +1,14 @@
 import Carbon
+import cshotCore
 import Foundation
-
-struct HotKey: Equatable {
-    let keyCode: UInt32
-    let modifiers: UInt32
-    let label: String
-}
-
-enum HotKeyPreset: String, CaseIterable, Identifiable {
-    case controlOptionCommandS
-    case controlOptionCommandTwo
-    case controlOptionCommandFive
-
-    var id: String { rawValue }
-
-    var label: String {
-        switch self {
-        case .controlOptionCommandS:
-            "Control Option Command S"
-        case .controlOptionCommandTwo:
-            "Control Option Command 2"
-        case .controlOptionCommandFive:
-            "Control Option Command 5"
-        }
-    }
-
-    var hotKey: HotKey {
-        switch self {
-        case .controlOptionCommandS:
-            HotKey(keyCode: 1, modifiers: UInt32(controlKey | optionKey | cmdKey), label: label)
-        case .controlOptionCommandTwo:
-            HotKey(keyCode: 19, modifiers: UInt32(controlKey | optionKey | cmdKey), label: label)
-        case .controlOptionCommandFive:
-            HotKey(keyCode: 23, modifiers: UInt32(controlKey | optionKey | cmdKey), label: label)
-        }
-    }
-}
 
 final class HotKeyManager: @unchecked Sendable {
     private var hotKeyRef: EventHotKeyRef?
     private var eventHandlerRef: EventHandlerRef?
     private var handler: (() -> Void)?
 
-    func register(_ hotKey: HotKey, handler: @escaping () -> Void) {
+    @discardableResult
+    func register(_ hotKey: HotKey, handler: @escaping () -> Void) -> HotKeyRegistrationError? {
         unregister()
         self.handler = handler
 
@@ -67,7 +33,7 @@ final class HotKeyManager: @unchecked Sendable {
             return noErr
         }
 
-        InstallEventHandler(
+        let installStatus = InstallEventHandler(
             GetApplicationEventTarget(),
             callback,
             1,
@@ -75,9 +41,13 @@ final class HotKeyManager: @unchecked Sendable {
             Unmanaged.passUnretained(self).toOpaque(),
             &eventHandlerRef
         )
+        guard installStatus == noErr else {
+            self.handler = nil
+            return HotKeyRegistrationError(hotKey: hotKey, status: installStatus)
+        }
 
         let hotKeyId = EventHotKeyID(signature: 0x43534854, id: 1)
-        RegisterEventHotKey(
+        let registerStatus = RegisterEventHotKey(
             hotKey.keyCode,
             hotKey.modifiers,
             hotKeyId,
@@ -85,6 +55,12 @@ final class HotKeyManager: @unchecked Sendable {
             0,
             &hotKeyRef
         )
+        guard registerStatus == noErr else {
+            unregister()
+            return HotKeyRegistrationError(hotKey: hotKey, status: registerStatus)
+        }
+
+        return nil
     }
 
     func unregister() {
@@ -105,5 +81,14 @@ final class HotKeyManager: @unchecked Sendable {
 
     private func fire() {
         handler?()
+    }
+}
+
+struct HotKeyRegistrationError: LocalizedError {
+    let hotKey: HotKey
+    let status: OSStatus
+
+    var errorDescription: String? {
+        "Could not register \(hotKey.label) as the global hotkey. Pick another shortcut in Settings. macOS returned status \(status)."
     }
 }

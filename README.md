@@ -56,7 +56,7 @@ The package script creates `dist/cshot.dmg`. The raw staged app is signed and ve
 
 ## Defaults
 
-- Hotkey: Control Option Command S
+- Hotkey: Control Option Command S by default, configurable in Settings
 - Storage: `/tmp/agent-shots`
 - Retention: 7 days
 - Injection: smart by app

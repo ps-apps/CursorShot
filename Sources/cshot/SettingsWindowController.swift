@@ -59,6 +59,8 @@ final class SettingsWindowController {
 struct SettingsView: View {
     @ObservedObject var settings: SettingsStore
     let reason: SettingsWindowController.PresentationReason
+    @State private var isRecordingHotKey = false
+    @State private var hotKeyRecorderMessage: String?
 
     var body: some View {
         ScrollView {
@@ -138,13 +140,54 @@ struct SettingsView: View {
     private var capturePanel: some View {
         SettingsPanel(title: "Capture", symbolName: "viewfinder") {
             SettingsRow(title: "Hotkey", symbolName: "keyboard") {
-                Picker("", selection: $settings.hotKeyPresetRaw) {
-                    ForEach(HotKeyPreset.allCases) { preset in
-                        Text(preset.label).tag(preset.rawValue)
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 8) {
+                        Label(settings.hotKey.label, systemImage: "keyboard")
+                            .font(.system(size: 13, weight: .semibold, design: .rounded))
+                            .lineLimit(1)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 7)
+                            .frame(minWidth: 188, alignment: .leading)
+                            .background(Color.primary.opacity(0.07))
+                            .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+
+                        Button {
+                            startHotKeyRecording()
+                        } label: {
+                            Label(isRecordingHotKey ? "Recording" : "Record", systemImage: "record.circle")
+                        }
+
+                        Button {
+                            resetHotKey()
+                        } label: {
+                            Image(systemName: "arrow.counterclockwise")
+                        }
+                        .accessibilityLabel("Reset hotkey")
+                        .help("Reset hotkey")
+                    }
+
+                    if isRecordingHotKey {
+                        HotKeyRecorderView(
+                            onRecord: { hotKey in
+                                finishHotKeyRecording(with: hotKey)
+                            },
+                            onCancel: {
+                                cancelHotKeyRecording()
+                            },
+                            onInvalid: { message in
+                                hotKeyRecorderMessage = message
+                            }
+                        )
+                        .frame(width: SettingsRowMetrics.controlWidth, height: 36)
+                    }
+
+                    if let hotKeyRecorderMessage {
+                        Text(hotKeyRecorderMessage)
+                            .font(.caption)
+                            .foregroundStyle(isRecordingHotKey ? Color.secondary : Color.green)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
-                .labelsHidden()
-                .frame(width: SettingsRowMetrics.controlWidth)
             }
 
             SettingsRow(title: "Injection", symbolName: "arrowshape.turn.up.right") {
@@ -314,6 +357,28 @@ struct SettingsView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
+    }
+
+    private func startHotKeyRecording() {
+        isRecordingHotKey = true
+        hotKeyRecorderMessage = "Press a shortcut with Command, Control, or Option."
+    }
+
+    private func finishHotKeyRecording(with hotKey: HotKey) {
+        settings.assignHotKey(hotKey)
+        isRecordingHotKey = false
+        hotKeyRecorderMessage = "Saved \(hotKey.label)."
+    }
+
+    private func cancelHotKeyRecording() {
+        isRecordingHotKey = false
+        hotKeyRecorderMessage = nil
+    }
+
+    private func resetHotKey() {
+        settings.resetHotKeyToDefault()
+        isRecordingHotKey = false
+        hotKeyRecorderMessage = "Reset to \(settings.hotKey.label)."
     }
 
     private func resetPermissions() {

@@ -78,8 +78,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func registerHotKey() {
-        hotKeyManager.register(settings.hotKey) { [weak self] in
+        let hotKey = settings.hotKey
+        let registrationError = hotKeyManager.register(hotKey, handler: { [weak self] in
             self?.captureCoordinator?.captureNow()
+        })
+        if let registrationError {
+            errorPresenter.showError(registrationError)
         }
     }
 

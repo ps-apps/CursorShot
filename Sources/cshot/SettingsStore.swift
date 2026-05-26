@@ -21,6 +21,10 @@ final class SettingsStore: ObservableObject {
         didSet { persist("hotKeyPresetRaw", value: hotKeyPresetRaw) }
     }
 
+    @Published var customHotKeyRaw: String {
+        didSet { persist("customHotKeyRaw", value: customHotKeyRaw) }
+    }
+
     @Published var captureSoundsEnabled: Bool {
         didSet { persist("captureSoundsEnabled", value: captureSoundsEnabled) }
     }
@@ -38,7 +42,8 @@ final class SettingsStore: ObservableObject {
         }
 
         injectionModeRaw = defaults.string(forKey: "injectionModeRaw") ?? InjectionMode.smart.rawValue
-        hotKeyPresetRaw = defaults.string(forKey: "hotKeyPresetRaw") ?? HotKeyPreset.controlOptionCommandS.rawValue
+        hotKeyPresetRaw = defaults.string(forKey: "hotKeyPresetRaw") ?? HotKeyPreference.defaultPreset.rawValue
+        customHotKeyRaw = defaults.string(forKey: "customHotKeyRaw") ?? ""
         captureSoundsEnabled = defaults.object(forKey: "captureSoundsEnabled") as? Bool ?? true
     }
 
@@ -52,12 +57,17 @@ final class SettingsStore: ObservableObject {
         InjectionMode(rawValue: injectionModeRaw) ?? .smart
     }
 
-    var hotKeyPreset: HotKeyPreset {
-        HotKeyPreset(rawValue: hotKeyPresetRaw) ?? .controlOptionCommandS
+    var hotKey: HotKey {
+        HotKeyPreference.resolve(customHotKeyRaw: customHotKeyRaw, presetRaw: hotKeyPresetRaw)
     }
 
-    var hotKey: HotKey {
-        hotKeyPreset.hotKey
+    func assignHotKey(_ hotKey: HotKey) {
+        customHotKeyRaw = hotKey.preferenceValue
+    }
+
+    func resetHotKeyToDefault() {
+        customHotKeyRaw = ""
+        hotKeyPresetRaw = HotKeyPreference.defaultPreset.rawValue
     }
 
     private func persist(_ key: String, value: String) {
