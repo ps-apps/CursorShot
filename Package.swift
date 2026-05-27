@@ -3,17 +3,17 @@
 import PackageDescription
 
 let package = Package(
-    name: "cshot",
+    name: "CursorShot",
     platforms: [
         .macOS(.v14)
     ],
     products: [
-        .executable(name: "cshot", targets: ["cshot"]),
-        .library(name: "cshotCore", targets: ["cshotCore"])
+        .executable(name: "CursorShot", targets: ["CursorShot"]),
+        .library(name: "CursorShotCore", targets: ["CursorShotCore"])
     ],
     targets: [
         .target(
-            name: "cshotCore",
+            name: "CursorShotCore",
             linkerSettings: [
                 .linkedFramework("AppKit"),
                 .linkedFramework("ApplicationServices"),
@@ -21,8 +21,8 @@ let package = Package(
             ]
         ),
         .executableTarget(
-            name: "cshot",
-            dependencies: ["cshotCore"],
+            name: "CursorShot",
+            dependencies: ["CursorShotCore"],
             linkerSettings: [
                 .linkedFramework("AppKit"),
                 .linkedFramework("SwiftUI"),
@@ -33,8 +33,8 @@ let package = Package(
             ]
         ),
         .testTarget(
-            name: "cshotCoreTests",
-            dependencies: ["cshotCore"]
+            name: "CursorShotCoreTests",
+            dependencies: ["CursorShotCore"]
         )
     ]
 )

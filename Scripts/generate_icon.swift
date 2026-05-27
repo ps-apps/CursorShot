@@ -1,11 +1,11 @@
 import AppKit
 import Foundation
 
-let outputURL = URL(fileURLWithPath: CommandLine.arguments.dropFirst().first ?? "cshot.icns")
+let outputURL = URL(fileURLWithPath: CommandLine.arguments.dropFirst().first ?? "CursorShot.icns")
 let fileManager = FileManager.default
 let temporaryDirectory = fileManager.temporaryDirectory
-    .appendingPathComponent("cshotIcon-\(UUID().uuidString)", isDirectory: true)
-let iconsetURL = temporaryDirectory.appendingPathComponent("cshot.iconset", isDirectory: true)
+    .appendingPathComponent("cursorShotIcon-\(UUID().uuidString)", isDirectory: true)
+let iconsetURL = temporaryDirectory.appendingPathComponent("CursorShot.iconset", isDirectory: true)
 
 try fileManager.createDirectory(at: iconsetURL, withIntermediateDirectories: true)
 
@@ -26,32 +26,56 @@ for size in sizes {
     let image = NSImage(size: NSSize(width: size.pixels, height: size.pixels))
     image.lockFocus()
 
+    let scale = CGFloat(size.pixels)
     let rect = NSRect(x: 0, y: 0, width: size.pixels, height: size.pixels)
-    NSColor(calibratedRed: 0.05, green: 0.12, blue: 0.22, alpha: 1).setFill()
-    NSBezierPath(roundedRect: rect.insetBy(dx: CGFloat(size.pixels) * 0.06, dy: CGFloat(size.pixels) * 0.06), xRadius: CGFloat(size.pixels) * 0.18, yRadius: CGFloat(size.pixels) * 0.18).fill()
+    let shell = NSBezierPath(
+        roundedRect: rect.insetBy(dx: scale * 0.055, dy: scale * 0.055),
+        xRadius: scale * 0.20,
+        yRadius: scale * 0.20
+    )
+    shell.addClip()
 
-    let apertureRect = rect.insetBy(dx: CGFloat(size.pixels) * 0.2, dy: CGFloat(size.pixels) * 0.2)
-    NSColor(calibratedRed: 0.18, green: 0.56, blue: 1.0, alpha: 1).setStroke()
-    let aperture = NSBezierPath(roundedRect: apertureRect, xRadius: CGFloat(size.pixels) * 0.09, yRadius: CGFloat(size.pixels) * 0.09)
-    aperture.lineWidth = max(2, CGFloat(size.pixels) * 0.055)
-    aperture.stroke()
+    let background = NSGradient(colors: [
+        NSColor(calibratedRed: 0.10, green: 0.16, blue: 0.24, alpha: 1),
+        NSColor(calibratedRed: 0.06, green: 0.38, blue: 0.36, alpha: 1)
+    ])
+    background?.draw(in: rect, angle: 38)
 
-    NSColor(calibratedRed: 0.50, green: 0.95, blue: 0.72, alpha: 1).setFill()
-    let dotSize = CGFloat(size.pixels) * 0.12
-    NSBezierPath(ovalIn: NSRect(x: rect.midX - dotSize / 2, y: rect.midY - dotSize / 2, width: dotSize, height: dotSize)).fill()
+    NSColor.white.withAlphaComponent(0.16).setStroke()
+    shell.lineWidth = max(1, scale * 0.018)
+    shell.stroke()
 
-    NSColor.white.withAlphaComponent(0.82).setStroke()
-    let crosshair = NSBezierPath()
-    crosshair.lineWidth = max(1, CGFloat(size.pixels) * 0.024)
-    crosshair.move(to: NSPoint(x: rect.midX, y: apertureRect.minY + CGFloat(size.pixels) * 0.04))
-    crosshair.line(to: NSPoint(x: rect.midX, y: apertureRect.minY + CGFloat(size.pixels) * 0.18))
-    crosshair.move(to: NSPoint(x: rect.midX, y: apertureRect.maxY - CGFloat(size.pixels) * 0.04))
-    crosshair.line(to: NSPoint(x: rect.midX, y: apertureRect.maxY - CGFloat(size.pixels) * 0.18))
-    crosshair.move(to: NSPoint(x: apertureRect.minX + CGFloat(size.pixels) * 0.04, y: rect.midY))
-    crosshair.line(to: NSPoint(x: apertureRect.minX + CGFloat(size.pixels) * 0.18, y: rect.midY))
-    crosshair.move(to: NSPoint(x: apertureRect.maxX - CGFloat(size.pixels) * 0.04, y: rect.midY))
-    crosshair.line(to: NSPoint(x: apertureRect.maxX - CGFloat(size.pixels) * 0.18, y: rect.midY))
-    crosshair.stroke()
+    let ringRect = rect.insetBy(dx: scale * 0.22, dy: scale * 0.22)
+    NSColor(calibratedRed: 0.45, green: 0.95, blue: 0.72, alpha: 1).setStroke()
+    let ring = NSBezierPath(ovalIn: ringRect)
+    ring.lineWidth = max(2, scale * 0.052)
+    ring.stroke()
+
+    NSColor(calibratedRed: 0.26, green: 0.58, blue: 1.0, alpha: 1).setStroke()
+    let focus = NSBezierPath(ovalIn: ringRect.insetBy(dx: scale * 0.12, dy: scale * 0.12))
+    focus.lineWidth = max(1.5, scale * 0.025)
+    focus.stroke()
+
+    let cursor = NSBezierPath()
+    cursor.move(to: NSPoint(x: scale * 0.36, y: scale * 0.72))
+    cursor.line(to: NSPoint(x: scale * 0.36, y: scale * 0.25))
+    cursor.line(to: NSPoint(x: scale * 0.49, y: scale * 0.38))
+    cursor.line(to: NSPoint(x: scale * 0.57, y: scale * 0.20))
+    cursor.line(to: NSPoint(x: scale * 0.66, y: scale * 0.25))
+    cursor.line(to: NSPoint(x: scale * 0.58, y: scale * 0.43))
+    cursor.line(to: NSPoint(x: scale * 0.75, y: scale * 0.43))
+    cursor.close()
+    NSColor.white.setFill()
+    cursor.fill()
+    NSColor.black.withAlphaComponent(0.22).setStroke()
+    cursor.lineWidth = max(1, scale * 0.018)
+    cursor.stroke()
+
+    NSColor(calibratedRed: 1.0, green: 0.72, blue: 0.28, alpha: 1).setFill()
+    let dotSize = scale * 0.085
+    NSBezierPath(
+        ovalIn: NSRect(x: scale * 0.64, y: scale * 0.63, width: dotSize, height: dotSize)
+    ).fill()
 
     image.unlockFocus()
 
@@ -60,7 +84,7 @@ for size in sizes {
         let bitmap = NSBitmapImageRep(data: tiff),
         let png = bitmap.representation(using: .png, properties: [:])
     else {
-        throw NSError(domain: "cshotIcon", code: 1)
+        throw NSError(domain: "cursorShotIcon", code: 1)
     }
 
     try png.write(to: iconsetURL.appendingPathComponent(size.name), options: [.atomic])
@@ -73,7 +97,7 @@ try process.run()
 process.waitUntilExit()
 
 guard process.terminationStatus == 0 else {
-    throw NSError(domain: "cshotIcon", code: Int(process.terminationStatus))
+    throw NSError(domain: "cursorShotIcon", code: Int(process.terminationStatus))
 }
 
 try? fileManager.removeItem(at: temporaryDirectory)

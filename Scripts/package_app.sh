@@ -2,9 +2,9 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-APP_NAME="cshot"
+APP_NAME="CursorShot"
 DIST_DIR="$ROOT_DIR/dist"
-STAGING_DIR="${TMPDIR:-/tmp}/cshot-package"
+STAGING_DIR="${TMPDIR:-/tmp}/CursorShot-package"
 APP_DIR="$STAGING_DIR/$APP_NAME.app"
 CONTENTS_DIR="$APP_DIR/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
@@ -19,7 +19,7 @@ BUILD_BIN_DIR="$(swift build -c release --scratch-path "$BUILD_DIR" --show-bin-p
 
 mkdir -p "$MACOS_DIR" "$RESOURCES_DIR"
 cp "$BUILD_BIN_DIR/$APP_NAME" "$MACOS_DIR/$APP_NAME"
-swift "$ROOT_DIR/Scripts/generate_icon.swift" "$RESOURCES_DIR/cshot.icns"
+swift "$ROOT_DIR/Scripts/generate_icon.swift" "$RESOURCES_DIR/CursorShot.icns"
 
 cat > "$CONTENTS_DIR/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
@@ -27,17 +27,17 @@ cat > "$CONTENTS_DIR/Info.plist" <<'PLIST'
 <plist version="1.0">
 <dict>
   <key>CFBundleExecutable</key>
-  <string>cshot</string>
+  <string>CursorShot</string>
   <key>CFBundleIdentifier</key>
-  <string>com.local.cshot</string>
+  <string>com.local.CursorShot</string>
   <key>CFBundleName</key>
-  <string>cshot</string>
+  <string>CursorShot</string>
   <key>CFBundleDisplayName</key>
-  <string>cshot</string>
+  <string>CursorShot</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleIconFile</key>
-  <string>cshot</string>
+  <string>CursorShot</string>
   <key>CFBundleShortVersionString</key>
   <string>0.4.0</string>
   <key>CFBundleVersion</key>
@@ -49,7 +49,7 @@ cat > "$CONTENTS_DIR/Info.plist" <<'PLIST'
   <key>NSHighResolutionCapable</key>
   <true/>
   <key>NSAppleEventsUsageDescription</key>
-  <string>cshot uses macOS automation permissions only to return focus and paste the captured screenshot reference into the app where you started.</string>
+  <string>CursorShot uses macOS automation permissions only to return focus and paste the captured screenshot reference into the app where you started.</string>
 </dict>
 </plist>
 PLIST
