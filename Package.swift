@@ -42,6 +42,10 @@ let package = Package(
         .testTarget(
             name: "CursorShotCoreTests",
             dependencies: ["CursorShotCore"]
+        ),
+        .testTarget(
+            name: "CursorShotTests",
+            dependencies: ["CursorShot"]
         )
     ]
 )
