@@ -142,6 +142,7 @@ final class CaptureOverlayController {
             DebugLog.write("overlay input interceptor started")
         }
 
+        NSApp.activate(ignoringOtherApps: true)
         windows.forEach { $0.orderFrontRegardless() }
         if let firstWindow = windows.first {
             firstWindow.makeKeyAndOrderFront(nil)
