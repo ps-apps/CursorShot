@@ -144,8 +144,7 @@ final class CaptureOverlayController {
 
         windows.forEach { $0.orderFrontRegardless() }
         if let firstWindow = windows.first {
-            firstWindow.makeKeyAndOrderFront(nil)
-            firstWindow.makeMain()
+            firstWindow.makeKey()
             firstWindow.makeFirstResponder(firstWindow.overlayView)
         }
         DebugLog.write("overlay windows ordered count=\(windows.count)")
@@ -623,7 +622,7 @@ final class CaptureOverlayController {
     }
 }
 
-final class CaptureOverlayWindow: NSWindow {
+final class CaptureOverlayWindow: NSPanel {
     let overlayView: CaptureOverlayView
 
     init(screen: NSScreen, controller: CaptureOverlayController) {
@@ -631,12 +630,14 @@ final class CaptureOverlayWindow: NSWindow {
 
         super.init(
             contentRect: screen.frame,
-            styleMask: [.borderless],
+            styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
         )
 
         isReleasedWhenClosed = false
+        hidesOnDeactivate = false
+        worksWhenModal = true
         backgroundColor = .clear
         isOpaque = false
         hasShadow = false
@@ -654,7 +655,7 @@ final class CaptureOverlayWindow: NSWindow {
     }
 
     override var canBecomeMain: Bool {
-        true
+        false
     }
 }
 
