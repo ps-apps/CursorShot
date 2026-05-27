@@ -10,6 +10,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let currentSpaceQuickCaptureHotKeyManager = HotKeyManager(id: 3)
     private let activationTracker = ApplicationActivationTracker()
     private let errorPresenter = ErrorPresenter()
+    private let softwareUpdateController = SoftwareUpdateController()
 
     private var statusItem: NSStatusItem?
     private var settingsWindowController: SettingsWindowController?
@@ -57,6 +58,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let menu = NSMenu()
         menu.addItem(menuItem(title: "Capture Now", symbolName: "viewfinder", action: #selector(captureNow)))
         menu.addItem(menuItem(title: "Settings", symbolName: "gearshape", action: #selector(showSettings), keyEquivalent: ","))
+        menu.addItem(softwareUpdateController.checkForUpdatesMenuItem())
         menu.addItem(.separator())
         menu.addItem(menuItem(title: "Quit", symbolName: "power", action: #selector(quit), keyEquivalent: "q"))
 

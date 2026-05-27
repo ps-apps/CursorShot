@@ -11,6 +11,9 @@ let package = Package(
         .executable(name: "CursorShot", targets: ["CursorShot"]),
         .library(name: "CursorShotCore", targets: ["CursorShotCore"])
     ],
+    dependencies: [
+        .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.9.1")
+    ],
     targets: [
         .target(
             name: "CursorShotCore",
@@ -22,14 +25,18 @@ let package = Package(
         ),
         .executableTarget(
             name: "CursorShot",
-            dependencies: ["CursorShotCore"],
+            dependencies: [
+                "CursorShotCore",
+                .product(name: "Sparkle", package: "Sparkle")
+            ],
             linkerSettings: [
                 .linkedFramework("AppKit"),
                 .linkedFramework("SwiftUI"),
                 .linkedFramework("ScreenCaptureKit"),
                 .linkedFramework("Carbon"),
                 .linkedFramework("ImageIO"),
-                .linkedFramework("UniformTypeIdentifiers")
+                .linkedFramework("UniformTypeIdentifiers"),
+                .unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"])
             ]
         ),
         .testTarget(

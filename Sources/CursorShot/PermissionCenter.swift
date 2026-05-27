@@ -4,8 +4,10 @@ import CoreGraphics
 import Foundation
 
 enum PermissionCenter {
+    static let productionBundleIdentifier = "io.github.ps-org.cursorshot"
+
     static var bundleIdentifier: String {
-        Bundle.main.bundleIdentifier ?? "com.local.CursorShot"
+        Bundle.main.bundleIdentifier ?? productionBundleIdentifier
     }
 
     static var resetCommand: String {
@@ -86,7 +88,7 @@ enum PermissionCenter {
     }
 
     private static var permissionBundleIds: [String] {
-        Array(Set([bundleIdentifier, "com.local.CursorShot"])).sorted()
+        Array(Set([bundleIdentifier, productionBundleIdentifier, "com.local.CursorShot"])).sorted()
     }
 
     private static func openSystemSettingsPane(_ urlString: String) {

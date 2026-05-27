@@ -23,8 +23,8 @@ If macOS already shows CursorShot as enabled but the app still says permissions 
 
 ```sh
 pkill -x CursorShot 2>/dev/null || true
-tccutil reset Accessibility com.local.CursorShot
-tccutil reset ScreenCapture com.local.CursorShot
+tccutil reset Accessibility io.github.ps-org.cursorshot
+tccutil reset ScreenCapture io.github.ps-org.cursorshot
 ```
 
 Then reopen CursorShot and grant both permissions again. The Settings window also includes reset and privacy-pane buttons.
@@ -39,12 +39,15 @@ Scripts/package_app.sh
 For Developer ID signing:
 
 ```sh
-CODESIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)" Scripts/package_app.sh
+SPARKLE_PUBLIC_ED_KEY="base64-public-key" \
+CODESIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)" \
+Scripts/package_app.sh
 ```
 
 For notarization, provide App Store Connect credentials as environment variables:
 
 ```sh
+SPARKLE_PUBLIC_ED_KEY="base64-public-key" \
 CODESIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)" \
 APPLE_ID="you@example.com" \
 APPLE_TEAM_ID="TEAMID" \
@@ -52,7 +55,38 @@ APPLE_APP_PASSWORD="app-specific-password" \
 Scripts/package_app.sh
 ```
 
-The package script creates `dist/CursorShot.dmg`. The raw staged app is signed and verified during packaging, then bundled into the DMG.
+The package script creates `dist/CursorShot.dmg` for installs and `dist/updates/CursorShot-$APP_VERSION.zip` for Sparkle updates. The raw staged app is signed and verified during packaging, then bundled into the release artifacts.
+
+## Updates
+
+CursorShot uses Sparkle for automatic updates. Release builds check:
+
+```text
+https://github.com/ps-org/CursorShot/releases/latest/download/appcast.xml
+```
+
+Generate the Sparkle EdDSA key once with Sparkle's tool after the package has been resolved:
+
+```sh
+swift build -c release
+.build/artifacts/sparkle/Sparkle/bin/generate_keys
+```
+
+The production public key is already configured in `Scripts/package_app.sh`. Keep the private key in Keychain or export it to a secure location; never commit it. Override `SPARKLE_PUBLIC_ED_KEY` only if rotating keys.
+
+After packaging a release archive, generate the appcast:
+
+```sh
+APP_VERSION="0.4.0" RELEASE_TAG="v0.4.0" Scripts/generate_appcast.sh
+```
+
+By default the appcast script signs with the `ed25519` private key from your login Keychain. Set `SPARKLE_KEYCHAIN_ACCOUNT` to use another Keychain account name, or set `SPARKLE_ED_KEY_FILE` to a private-key file path for CI.
+
+Upload these files to the matching GitHub release:
+
+- `dist/CursorShot.dmg`
+- `dist/updates/CursorShot-$APP_VERSION.zip`
+- `dist/updates/appcast.xml`
 
 ## Defaults
 
