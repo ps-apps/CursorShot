@@ -17,8 +17,8 @@ The production public EdDSA key is configured in `Scripts/package_app.sh`. Keep 
 ## Build Release Artifacts
 
 ```sh
-APP_VERSION="0.4.0" \
-APP_BUILD="14" \
+APP_VERSION="0.4.1" \
+APP_BUILD="15" \
 CODESIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)" \
 APPLE_ID="you@example.com" \
 APPLE_TEAM_ID="TEAMID" \
@@ -34,8 +34,8 @@ The script creates:
 ## Generate Appcast
 
 ```sh
-APP_VERSION="0.4.0" \
-RELEASE_TAG="v0.4.0" \
+APP_VERSION="0.4.1" \
+RELEASE_TAG="v0.4.1" \
 Scripts/generate_appcast.sh
 ```
 
