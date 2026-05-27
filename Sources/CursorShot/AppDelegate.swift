@@ -139,7 +139,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func refreshActivationPolicy() {
-        NSApp.setActivationPolicy(PermissionCenter.hasAllPermissions ? .accessory : .regular)
+        NSApp.setActivationPolicy(.accessory)
     }
 
     private func showPermissionSetupIfNeeded() {
