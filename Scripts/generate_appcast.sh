@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_NAME="CursorShot"
 APP_VERSION="${APP_VERSION:-0.4.0}"
-GITHUB_REPOSITORY="${GITHUB_REPOSITORY:-ps-org/CursorShot}"
+GITHUB_REPOSITORY="${GITHUB_REPOSITORY:-ps-apps/CursorShot}"
 RELEASE_TAG="${RELEASE_TAG:-v$APP_VERSION}"
 UPDATES_DIR="${SPARKLE_UPDATES_DIR:-$ROOT_DIR/dist/updates}"
 DOWNLOAD_URL_PREFIX="${SPARKLE_DOWNLOAD_URL_PREFIX:-https://github.com/$GITHUB_REPOSITORY/releases/download/$RELEASE_TAG/}"

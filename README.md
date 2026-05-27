@@ -4,7 +4,11 @@ CursorShot is a local macOS screenshot utility for capturing a window, crop, ful
 
 ## Download
 
-Download the latest `CursorShot.dmg` from the [releases page](https://github.com/ps-org/CursorShot/releases/latest).
+Download the latest `CursorShot.dmg` from the [releases page](https://github.com/ps-apps/CursorShot/releases/latest).
+
+```sh
+brew install --cask ps-apps/tap/cursorshot
+```
 
 Installed release builds check for updates automatically. You can also choose **Check for Updates...** from the CursorShot menu bar item.
 
@@ -21,8 +25,8 @@ If macOS already shows CursorShot as enabled but the app still says permissions 
 
 ```sh
 pkill -x CursorShot 2>/dev/null || true
-tccutil reset Accessibility io.github.ps-org.cursorshot
-tccutil reset ScreenCapture io.github.ps-org.cursorshot
+tccutil reset Accessibility io.github.ps-apps.cursorshot
+tccutil reset ScreenCapture io.github.ps-apps.cursorshot
 ```
 
 Then reopen CursorShot and grant both permissions again. The Settings window also includes reset and privacy-pane buttons.

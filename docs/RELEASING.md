@@ -4,7 +4,7 @@ These notes are for maintainers. End users do not need to configure or understan
 
 ## Prerequisites
 
-- GitHub release access for `ps-org/CursorShot`.
+- GitHub release access for `ps-apps/CursorShot`.
 - A Developer ID Application certificate for public distribution.
 - Apple notarization credentials:
   - `APPLE_ID`
@@ -54,7 +54,7 @@ Upload these assets to the matching GitHub release:
 Release builds check this feed:
 
 ```text
-https://github.com/ps-org/CursorShot/releases/latest/download/appcast.xml
+https://github.com/ps-apps/CursorShot/releases/latest/download/appcast.xml
 ```
 
 ## Verification

@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+      name="description"
+      content="CursorShot is a local macOS screenshot utility for window, crop, full-screen, and annotated captures with automatic updates."
+    >
+    <title>CursorShot</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #111315;
+        --panel: #191d20;
+        --panel-strong: #20262a;
+        --text: #f3f5f2;
+        --muted: #a8b0b6;
+        --line: #30383d;
+        --accent: #25c38a;
+        --accent-2: #2c8cff;
+        --warn: #f0a43a;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .site {
+        min-height: 100vh;
+      }
+
+      .nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: min(1120px, calc(100% - 40px));
+        margin: 0 auto;
+        padding: 20px 0;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 760;
+      }
+
+      .brand img {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+      }
+
+      .nav a {
+        color: var(--muted);
+        font-size: 14px;
+        text-decoration: none;
+      }
+
+      .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+      }
+
+      .hero {
+        width: min(1120px, calc(100% - 40px));
+        margin: 0 auto;
+        padding: 64px 0 52px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(340px, 460px);
+        gap: 52px;
+        align-items: center;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--accent);
+        font-size: 13px;
+        font-weight: 720;
+        text-transform: uppercase;
+        letter-spacing: 0;
+      }
+
+      .eyebrow::before {
+        content: "";
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--accent);
+      }
+
+      h1 {
+        margin: 16px 0 16px;
+        font-size: clamp(54px, 8vw, 92px);
+        line-height: 0.95;
+        letter-spacing: 0;
+      }
+
+      .lead {
+        max-width: 660px;
+        margin: 0;
+        color: var(--muted);
+        font-size: 20px;
+        line-height: 1.55;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 30px;
+      }
+
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 46px;
+        padding: 0 18px;
+        border-radius: 7px;
+        border: 1px solid var(--line);
+        background: var(--panel-strong);
+        color: var(--text);
+        font-weight: 720;
+        text-decoration: none;
+        white-space: nowrap;
+      }
+
+      .button.primary {
+        border-color: transparent;
+        background: var(--accent);
+        color: #07120d;
+      }
+
+      .install {
+        margin-top: 18px;
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+        max-width: 100%;
+        padding: 0 14px;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        background: #0b0d0f;
+        color: #dfe7df;
+        font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+        font-size: 14px;
+        overflow-x: auto;
+      }
+
+      .preview {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        overflow: hidden;
+        box-shadow: 0 24px 80px rgb(0 0 0 / 0.28);
+      }
+
+      .preview-bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        height: 42px;
+        padding: 0 14px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .dot {
+        width: 11px;
+        height: 11px;
+        border-radius: 999px;
+      }
+
+      .red { background: #ff5f57; }
+      .yellow { background: #ffbd2e; }
+      .green { background: #28c840; }
+
+      .preview-body {
+        padding: 26px;
+      }
+
+      .app-icon {
+        width: 104px;
+        height: 104px;
+        border-radius: 22px;
+        display: block;
+        margin-bottom: 24px;
+      }
+
+      .capture-frame {
+        border: 1px solid #3d464c;
+        border-radius: 8px;
+        min-height: 210px;
+        padding: 16px;
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        gap: 16px;
+        background:
+          linear-gradient(90deg, rgb(255 255 255 / 0.04) 1px, transparent 1px),
+          linear-gradient(rgb(255 255 255 / 0.04) 1px, transparent 1px),
+          #121619;
+        background-size: 28px 28px;
+      }
+
+      .toolbar {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+      }
+
+      .tool {
+        min-height: 34px;
+        border-radius: 6px;
+        border: 1px solid #40484f;
+        background: #1f2529;
+      }
+
+      .tool.active {
+        border-color: var(--accent-2);
+        background: #16314c;
+      }
+
+      .target {
+        border: 2px solid var(--accent);
+        border-radius: 6px;
+        background: rgb(37 195 138 / 0.08);
+      }
+
+      .caption {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .section {
+        border-top: 1px solid var(--line);
+      }
+
+      .section-inner {
+        width: min(1120px, calc(100% - 40px));
+        margin: 0 auto;
+        padding: 44px 0;
+      }
+
+      .features {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .feature {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        padding: 20px;
+      }
+
+      .feature h2 {
+        margin: 0 0 10px;
+        font-size: 18px;
+        letter-spacing: 0;
+      }
+
+      .feature p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .note {
+        margin-top: 22px;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      .note strong {
+        color: var(--warn);
+      }
+
+      footer {
+        width: min(1120px, calc(100% - 40px));
+        margin: 0 auto;
+        padding: 26px 0 44px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      @media (max-width: 820px) {
+        .nav {
+          width: min(100% - 28px, 1120px);
+        }
+
+        .nav-links {
+          gap: 12px;
+        }
+
+        .hero {
+          width: min(100% - 28px, 1120px);
+          grid-template-columns: 1fr;
+          padding-top: 36px;
+        }
+
+        .lead {
+          font-size: 18px;
+        }
+
+        .preview {
+          max-width: 520px;
+        }
+
+        .section-inner,
+        footer {
+          width: min(100% - 28px, 1120px);
+        }
+
+        .features {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="site">
+      <nav class="nav" aria-label="Primary">
+        <div class="brand">
+          <img src="assets/cursorshot-icon.png" alt="" width="34" height="34">
+          <span>CursorShot</span>
+        </div>
+        <div class="nav-links">
+          <a href="https://github.com/ps-apps/CursorShot/releases/latest">Releases</a>
+          <a href="https://github.com/ps-apps/CursorShot">GitHub</a>
+        </div>
+      </nav>
+
+      <section class="hero">
+        <div>
+          <span class="eyebrow">macOS screenshot utility</span>
+          <h1>CursorShot</h1>
+          <p class="lead">
+            Capture a window, crop, full screen, or annotated image from anywhere,
+            then return to the app where you started and paste the right payload.
+          </p>
+          <div class="actions">
+            <a class="button primary" href="https://github.com/ps-apps/CursorShot/releases/latest/download/CursorShot.dmg">Download for macOS</a>
+            <a class="button" href="https://github.com/ps-apps/CursorShot">View Source</a>
+          </div>
+          <code class="install">brew install --cask ps-apps/tap/cursorshot</code>
+        </div>
+
+        <div class="preview" aria-label="CursorShot capture preview">
+          <div class="preview-bar">
+            <span class="dot red"></span>
+            <span class="dot yellow"></span>
+            <span class="dot green"></span>
+          </div>
+          <div class="preview-body">
+            <img class="app-icon" src="assets/cursorshot-icon.png" alt="CursorShot app icon" width="104" height="104">
+            <div class="capture-frame">
+              <div class="toolbar" aria-hidden="true">
+                <span class="tool active"></span>
+                <span class="tool"></span>
+                <span class="tool"></span>
+                <span class="tool"></span>
+              </div>
+              <div class="target" aria-hidden="true"></div>
+              <div class="caption">
+                <span>Window</span>
+                <span>Crop</span>
+                <span>Annotate</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-inner">
+          <div class="features">
+            <article class="feature">
+              <h2>Fast Capture</h2>
+              <p>Use configurable shortcuts for the picker, current Space, or Cmd-Tab target.</p>
+            </article>
+            <article class="feature">
+              <h2>Paste Back</h2>
+              <p>CursorShot saves locally, restores your target app, and pastes image data or a useful path.</p>
+            </article>
+            <article class="feature">
+              <h2>Automatic Updates</h2>
+              <p>Installed releases check for updates automatically and keep the app current.</p>
+            </article>
+          </div>
+          <p class="note">
+            <strong>macOS note:</strong> the initial public build is not Developer ID notarized yet,
+            so macOS may require manual approval in Privacy & Security before launch.
+          </p>
+        </div>
+      </section>
+    </main>
+    <footer>
+      MIT licensed. Built for macOS 14 and newer.
+    </footer>
+  </body>
+</html>
