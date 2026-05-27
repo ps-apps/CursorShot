@@ -4,7 +4,7 @@ import XCTest
 
 @MainActor
 final class CaptureOverlayWindowTests: XCTestCase {
-    func testOverlayWindowCanAppearOverFullScreenSpacesWithoutActivatingApp() throws {
+    func testOverlayWindowIsConfiguredToAppearOverFullScreenSpacesWithoutActivatingApp() throws {
         guard let screen = NSScreen.screens.first else {
             throw XCTSkip("Capture overlay window tests require at least one screen.")
         }
