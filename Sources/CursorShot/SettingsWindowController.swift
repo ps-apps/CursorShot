@@ -269,7 +269,7 @@ struct SettingsView: View {
             SettingsRow(
                 title: "Directory",
                 symbolName: "externaldrive",
-                helpText: "CursorShot stores PNGs and JSON metadata here. The directory is created with private permissions."
+                helpText: "CursorShot stores PNGs and JSON metadata here. The default directory is private; custom folders keep their existing folder permissions."
             ) {
                 HStack(spacing: 8) {
                     TextField("", text: $settings.storageDirectory)

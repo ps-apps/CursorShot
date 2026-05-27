@@ -82,5 +82,9 @@ public struct CaptureMetadataWriter {
     public func write(_ metadata: CaptureMetadata, to url: URL) throws {
         let data = try encoder.encode(metadata)
         try data.write(to: url, options: [.atomic])
+        try FileManager.default.setAttributes(
+            [.posixPermissions: NSNumber(value: Int16(0o600))],
+            ofItemAtPath: url.path
+        )
     }
 }

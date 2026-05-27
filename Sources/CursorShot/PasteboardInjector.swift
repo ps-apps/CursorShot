@@ -25,6 +25,11 @@ enum PasteRestoreMode {
     case commandTabBackThenActivateOrigin
 }
 
+enum PasteboardInjectionOutcome {
+    case postedPasteCommand
+    case copiedOnly
+}
+
 @MainActor
 final class PasteboardInjector {
     func copyToClipboard(payload: InjectionPayload) throws {
@@ -40,7 +45,8 @@ final class PasteboardInjector {
 
     func pasteFromClipboard(
         origin: OriginContext,
-        restoreMode: PasteRestoreMode = .activateOrigin
+        restoreMode: PasteRestoreMode = .activateOrigin,
+        onCompletion: (@MainActor (PasteboardInjectionOutcome) -> Void)? = nil
     ) throws {
         DebugLog.write("pasteFromClipboard start origin=\(origin.debugSummary) restoreMode=\(restoreMode)")
         guard let targetApp = NSRunningApplication(processIdentifier: origin.pid) else {
@@ -56,7 +62,8 @@ final class PasteboardInjector {
                     origin,
                     attempt: 1,
                     fallbackApp: targetApp,
-                    activationFallbackAttempts: [3, 6, 10]
+                    activationFallbackAttempts: [3, 6, 10],
+                    onCompletion: onCompletion
                 )
             }
         case .commandTabBackThenActivateOrigin:
@@ -67,7 +74,8 @@ final class PasteboardInjector {
                     origin,
                     attempt: 1,
                     fallbackApp: targetApp,
-                    activationFallbackAttempts: [3, 6, 10]
+                    activationFallbackAttempts: [3, 6, 10],
+                    onCompletion: onCompletion
                 )
             }
         }
@@ -129,16 +137,18 @@ final class PasteboardInjector {
         _ origin: OriginContext,
         attempt: Int,
         fallbackApp: NSRunningApplication? = nil,
-        activationFallbackAttempts: Set<Int> = []
+        activationFallbackAttempts: Set<Int> = [],
+        onCompletion: (@MainActor (PasteboardInjectionOutcome) -> Void)?
     ) {
         let frontmost = NSWorkspace.shared.frontmostApplication
         let frontmostPID = frontmost?.processIdentifier ?? 0
         if attempt == 1 {
-            DebugLog.write("paste wait frontmost start targetPID=\(origin.pid) frontmostPID=\(frontmostPID) cursorAvailable=\(origin.selectedRange != nil)")
+            DebugLog.write("paste wait frontmost start targetPID=\(origin.pid) frontmostPID=\(frontmostPID) focusAvailable=\(origin.focusedElement != nil)")
         }
         guard frontmostPID == origin.pid else {
             if attempt >= 14 {
                 DebugLog.write("paste abort: origin never became frontmost targetPID=\(origin.pid) finalFrontmostPID=\(frontmostPID)")
+                onCompletion?(.copiedOnly)
                 return
             }
 
@@ -151,40 +161,48 @@ final class PasteboardInjector {
                     origin,
                     attempt: attempt + 1,
                     fallbackApp: fallbackApp,
-                    activationFallbackAttempts: activationFallbackAttempts
+                    activationFallbackAttempts: activationFallbackAttempts,
+                    onCompletion: onCompletion
                 )
             }
             return
         }
 
         DebugLog.write("paste frontmost ready targetPID=\(origin.pid) attempt=\(attempt)")
-        restoreFocusAndPaste(origin, attempt: 1)
+        restoreFocusAndPaste(origin, attempt: 1, onCompletion: onCompletion)
     }
 
-    private func restoreFocusAndPaste(_ origin: OriginContext, attempt: Int) {
-        let cursorAvailable = origin.selectedRange != nil
+    private func restoreFocusAndPaste(
+        _ origin: OriginContext,
+        attempt: Int,
+        onCompletion: (@MainActor (PasteboardInjectionOutcome) -> Void)?
+    ) {
+        let requiresVerifiedFocus = origin.focusedElement != nil
         let restored = restoreFocusIfPossible(origin)
         if attempt == 1 {
-            DebugLog.write("paste focus restore start cursorAvailable=\(cursorAvailable)")
+            DebugLog.write("paste focus restore start requiresVerifiedFocus=\(requiresVerifiedFocus)")
         }
 
-        if cursorAvailable, !restored, attempt < 10 {
+        if requiresVerifiedFocus, !restored, attempt < 10 {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) {
-                self.restoreFocusAndPaste(origin, attempt: attempt + 1)
+                self.restoreFocusAndPaste(origin, attempt: attempt + 1, onCompletion: onCompletion)
             }
             return
         }
 
-        if cursorAvailable, !restored {
-            DebugLog.write("paste focus restore timed out for valid cursor; posting Command-V anyway")
-        } else if !cursorAvailable {
-            DebugLog.write("paste cursor position unavailable; posting Command-V may produce normal macOS failure feedback")
+        if requiresVerifiedFocus, !restored {
+            DebugLog.write("paste abort: focus restore timed out; leaving payload copied")
+            onCompletion?(.copiedOnly)
+            return
+        } else if !requiresVerifiedFocus {
+            DebugLog.write("paste focused element unavailable; posting Command-V into restored frontmost app")
         } else {
             DebugLog.write("paste focus ready attempt=\(attempt)")
         }
 
         DebugLog.write("pasteFromClipboard post Command-V")
         postCommandV()
+        onCompletion?(.postedPasteCommand)
     }
 
     @discardableResult

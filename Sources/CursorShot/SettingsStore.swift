@@ -53,7 +53,7 @@ final class SettingsStore: ObservableObject {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        storageDirectory = defaults.string(forKey: "storageDirectory") ?? "/tmp/agent-shots"
+        storageDirectory = Self.normalizedStorageDirectory(defaults.string(forKey: "storageDirectory"))
 
         if let storedRetentionDays = defaults.object(forKey: "retentionDays") as? Int {
             retentionDays = max(1, storedRetentionDays)
@@ -83,9 +83,12 @@ final class SettingsStore: ObservableObject {
     }
 
     var effectiveStorageDirectory: String {
-        let trimmed = storageDirectory.trimmingCharacters(in: .whitespacesAndNewlines)
-        let path = trimmed.isEmpty ? "/tmp/agent-shots" : trimmed
-        return (path as NSString).expandingTildeInPath
+        (Self.normalizedStorageDirectory(storageDirectory) as NSString).expandingTildeInPath
+    }
+
+    var usesManagedStorageDirectory: Bool {
+        let effectiveURL = URL(fileURLWithPath: effectiveStorageDirectory, isDirectory: true).standardizedFileURL
+        return effectiveURL.path == CaptureStorage.defaultDirectory.standardizedFileURL.path
     }
 
     var injectionMode: InjectionMode {
@@ -154,6 +157,15 @@ final class SettingsStore: ObservableObject {
         default:
             CurrentSpaceCaptureTarget.topApp.rawValue
         }
+    }
+
+    private static func normalizedStorageDirectory(_ raw: String?) -> String {
+        let trimmed = raw?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !trimmed.isEmpty, trimmed != CaptureStorage.legacyDefaultDirectoryPath else {
+            return CaptureStorage.defaultDirectory.path
+        }
+
+        return trimmed
     }
 
     private func hotKeyRaw(for role: HotKeyRole) -> String {

@@ -457,7 +457,8 @@ final class CaptureCoordinator {
         do {
             DebugLog.write("finishCapture start selection=\(debugSummary(result.selection)) delivery=\(delivery)")
             let storage = CaptureStorage(
-                directory: URL(fileURLWithPath: settings.effectiveStorageDirectory, isDirectory: true)
+                directory: URL(fileURLWithPath: settings.effectiveStorageDirectory, isDirectory: true),
+                protectsDirectoryPermissions: settings.usesManagedStorageDirectory
             )
             try storage.prepareDirectory()
             _ = try storage.cleanup(olderThanDays: settings.retentionDays)
@@ -605,7 +606,14 @@ final class CaptureCoordinator {
         }
 
         do {
-            try injector.pasteFromClipboard(origin: origin, restoreMode: restoreMode)
+            try injector.pasteFromClipboard(origin: origin, restoreMode: restoreMode) { [weak self] outcome in
+                guard case .copiedOnly = outcome else {
+                    return
+                }
+
+                DebugLog.write("deliverImmediately paste ended copied-only")
+                self?.showCopiedStatus(payload: payload)
+            }
         } catch PasteboardInjectorError.targetUnavailable, PasteboardInjectorError.targetActivationFailed {
             DebugLog.write("deliverImmediately paste target unavailable/activation failed")
             showCopiedStatus(payload: payload)
@@ -615,7 +623,14 @@ final class CaptureCoordinator {
     private func pastePreparedPayload(origin: OriginContext, payload: InjectionPayload) {
         DebugLog.write("pastePreparedPayload origin=\(debugSummary(origin)) payload=\(debugSummary(payload))")
         do {
-            try injector.pasteFromClipboard(origin: origin)
+            try injector.pasteFromClipboard(origin: origin) { [weak self] outcome in
+                guard case .copiedOnly = outcome else {
+                    return
+                }
+
+                DebugLog.write("pastePreparedPayload paste ended copied-only")
+                self?.showCopiedStatus(payload: payload)
+            }
         } catch PasteboardInjectorError.targetUnavailable, PasteboardInjectorError.targetActivationFailed {
             DebugLog.write("pastePreparedPayload target unavailable/activation failed")
             showCopiedStatus(payload: payload)

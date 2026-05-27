@@ -127,7 +127,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func cleanupOldCaptures() {
         do {
             let storage = CaptureStorage(
-                directory: URL(fileURLWithPath: settings.effectiveStorageDirectory, isDirectory: true)
+                directory: URL(fileURLWithPath: settings.effectiveStorageDirectory, isDirectory: true),
+                protectsDirectoryPermissions: settings.usesManagedStorageDirectory
             )
             _ = try storage.cleanup(olderThanDays: settings.retentionDays)
         } catch {

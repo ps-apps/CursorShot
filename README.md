@@ -59,7 +59,7 @@ The package script creates `dist/CursorShot.dmg`. The raw staged app is signed a
 - Open Picker shortcut: Command Shift S by default, configurable in Settings.
 - Current-Space Quick shortcut: Command Shift 2 by default, configurable in Settings.
 - Cmd-Tab Quick shortcut: Command Shift 1 by default, configurable in Settings.
-- Storage: `/tmp/agent-shots`
+- Storage: `~/Library/Application Support/CursorShot/Captures`
 - Retention: 7 days
 - Injection: smart by app
 - Diagnostics: `~/Library/Logs/CursorShot/CursorShot.log`
