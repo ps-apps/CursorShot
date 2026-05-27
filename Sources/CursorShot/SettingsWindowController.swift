@@ -20,7 +20,6 @@ final class SettingsWindowController {
 
     func show(reason: PresentationReason = .settings) {
         self.reason = reason
-        NSApp.setActivationPolicy(.regular)
 
         if let window {
             if let hostingView = window.contentView as? NSHostingView<SettingsView> {
@@ -30,7 +29,7 @@ final class SettingsWindowController {
             window.maxSize = Self.contentSize
             window.setContentSize(Self.contentSize)
             window.makeKeyAndOrderFront(nil)
-            NSApp.activate()
+            NSApp.activate(ignoringOtherApps: true)
             DebugLog.write("settings window shown existing reason=\(reason)")
             return
         }
@@ -54,7 +53,7 @@ final class SettingsWindowController {
         newWindow.makeKeyAndOrderFront(nil)
         window = newWindow
 
-        NSApp.activate()
+        NSApp.activate(ignoringOtherApps: true)
         DebugLog.write("settings window shown new reason=\(reason)")
     }
 }
