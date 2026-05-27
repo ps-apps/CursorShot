@@ -112,6 +112,7 @@ public struct HotKey: Codable, Equatable, Sendable {
 
 public enum HotKeyPreset: String, CaseIterable, Identifiable, Codable, Sendable {
     case controlOptionCommandS
+    case controlOptionCommandOne
     case controlOptionCommandTwo
     case controlOptionCommandFive
 
@@ -128,6 +129,12 @@ public enum HotKeyPreset: String, CaseIterable, Identifiable, Codable, Sendable 
                 keyCode: 1,
                 modifiers: HotKeyModifier.mask([.control, .option, .command]),
                 keyLabel: "S"
+            )
+        case .controlOptionCommandOne:
+            HotKey(
+                keyCode: 18,
+                modifiers: HotKeyModifier.mask([.control, .option, .command]),
+                keyLabel: "1"
             )
         case .controlOptionCommandTwo:
             HotKey(
@@ -147,8 +154,18 @@ public enum HotKeyPreset: String, CaseIterable, Identifiable, Codable, Sendable 
 
 public enum HotKeyPreference {
     public static let defaultPreset = HotKeyPreset.controlOptionCommandS
+    public static let immediateCaptureDefaultPreset = HotKeyPreset.controlOptionCommandTwo
+    public static let cmdTabImmediateCaptureDefaultPreset = HotKeyPreset.controlOptionCommandOne
 
     public static func resolve(customHotKeyRaw: String?, presetRaw: String?) -> HotKey {
+        resolve(customHotKeyRaw: customHotKeyRaw, presetRaw: presetRaw, defaultPreset: defaultPreset)
+    }
+
+    public static func resolve(
+        customHotKeyRaw: String?,
+        presetRaw: String?,
+        defaultPreset: HotKeyPreset
+    ) -> HotKey {
         if let customHotKeyRaw,
            let customHotKey = HotKey(preferenceValue: customHotKeyRaw),
            customHotKey.validationResult == .valid {

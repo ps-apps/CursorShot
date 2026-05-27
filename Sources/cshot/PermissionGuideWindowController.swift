@@ -23,6 +23,7 @@ final class PermissionGuideWindowController: NSObject, NSWindowDelegate {
         if let window {
             window.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
+            DebugLog.write("permission guide shown existing target=\(preferredTarget)")
             return
         }
 
@@ -35,7 +36,7 @@ final class PermissionGuideWindowController: NSObject, NSWindowDelegate {
         guideWindow.title = "cshot Permissions"
         guideWindow.contentMinSize = CGSize(width: 420, height: 520)
         guideWindow.level = .floating
-        guideWindow.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        guideWindow.collectionBehavior = [.fullScreenAuxiliary, .moveToActiveSpace]
         guideWindow.isReleasedWhenClosed = false
         guideWindow.delegate = self
         guideWindow.contentView = NSHostingView(
@@ -46,6 +47,7 @@ final class PermissionGuideWindowController: NSObject, NSWindowDelegate {
         window = guideWindow
         guideWindow.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+        DebugLog.write("permission guide shown new target=\(preferredTarget)")
     }
 
     func close() {

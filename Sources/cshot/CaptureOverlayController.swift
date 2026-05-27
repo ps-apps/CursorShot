@@ -1,4 +1,5 @@
 import AppKit
+import ApplicationServices
 import cshotCore
 import Foundation
 
@@ -37,6 +38,37 @@ final class CaptureOverlayController {
         }
     }
 
+    enum ToolbarOption: CaseIterable {
+        case window
+        case crop
+        case screen
+        case annotation
+
+        init(mode: Mode) {
+            switch mode {
+            case .window:
+                self = .window
+            case .crop:
+                self = .crop
+            case .screen:
+                self = .screen
+            }
+        }
+
+        var mode: Mode? {
+            switch self {
+            case .window:
+                .window
+            case .crop:
+                .crop
+            case .screen:
+                .screen
+            case .annotation:
+                nil
+            }
+        }
+    }
+
     private var windows: [CaptureOverlayWindow] = []
     private let windowFinder: WindowCandidateFinder
     private let completion: (CaptureOverlayResult?) -> Void
@@ -46,6 +78,7 @@ final class CaptureOverlayController {
 
     var mode: Mode = .window {
         didSet {
+            focusedToolbarOption = ToolbarOption(mode: mode)
             hoveredWindow = nil
             dragStart = nil
             dragCurrent = nil
@@ -59,6 +92,7 @@ final class CaptureOverlayController {
     var hoveredWindow: WindowCandidate?
     var windowCandidates: [WindowCandidate] = []
     var annotationArmed = false
+    var focusedToolbarOption: ToolbarOption = .window
     private var numberBuffer = ""
     private var numberBufferResetWorkItem: DispatchWorkItem?
 
@@ -76,7 +110,8 @@ final class CaptureOverlayController {
         }
 
         isActive = true
-        windowCandidates = windowFinder.candidates()
+        let allCandidates = windowFinder.candidates(scope: .all)
+        updateWindowCandidates(allCandidates, context: "CoreGraphics")
         windows = NSScreen.screens.map { screen in
             CaptureOverlayWindow(screen: screen, controller: self)
         }
@@ -86,14 +121,33 @@ final class CaptureOverlayController {
         }
         if inputInterceptor?.start() != true {
             inputInterceptor = nil
+            DebugLog.write("overlay input interceptor failed to start")
+        } else {
+            DebugLog.write("overlay input interceptor started")
         }
 
-        NSApp.activate(ignoringOtherApps: true)
         windows.forEach { $0.orderFrontRegardless() }
         if let firstWindow = windows.first {
             firstWindow.makeKeyAndOrderFront(nil)
             firstWindow.makeMain()
             firstWindow.makeFirstResponder(firstWindow.overlayView)
+        }
+        DebugLog.write("overlay windows ordered count=\(windows.count)")
+
+        Task { @MainActor [weak self] in
+            guard let self else {
+                return
+            }
+
+            let screenCaptureKitCandidates = await self.windowFinder.screenCaptureKitCandidates()
+            guard self.isActive else {
+                return
+            }
+
+            self.updateWindowCandidates(
+                allCandidates + screenCaptureKitCandidates,
+                context: "CoreGraphics+ScreenCaptureKit"
+            )
         }
     }
 
@@ -190,6 +244,7 @@ final class CaptureOverlayController {
     }
 
     func toggleAnnotationMode() {
+        focusedToolbarOption = .annotation
         annotationArmed.toggle()
         redrawAll()
     }
@@ -247,13 +302,25 @@ final class CaptureOverlayController {
         case 0:
             toggleAnnotationMode()
         case 49:
-            toggleMode()
+            if focusedToolbarOption == .annotation {
+                toggleAnnotationMode()
+            } else {
+                toggleMode()
+            }
         case 13:
             setMode(.window)
         case 8:
             setMode(.crop)
         case 3:
             setMode(.screen)
+        case 123:
+            focusToolbarOption(offset: -1)
+        case 124:
+            focusToolbarOption(offset: 1)
+        case 125:
+            moveHoveredWindow(offset: 1)
+        case 126:
+            moveHoveredWindow(offset: -1)
         case 36, 76:
             finishCurrentSelection(mousePoint: NSEvent.mouseLocation)
         default:
@@ -284,6 +351,36 @@ final class CaptureOverlayController {
             overlayView(containing: point)?.handleGlobalScroll(at: point, deltaY: deltaY)
         case .swallow:
             return
+        }
+    }
+
+    private func moveHoveredWindow(offset: Int) {
+        guard mode == .window, !numberedWindowCandidates.isEmpty else {
+            return
+        }
+
+        let currentIndex = hoveredWindow.flatMap { hoveredWindow in
+            windowCandidates.firstIndex(of: hoveredWindow)
+        } ?? (offset > 0 ? -1 : windowCandidates.count)
+        let nextIndex = (currentIndex + offset + windowCandidates.count) % windowCandidates.count
+        hoveredWindow = windowCandidates[nextIndex]
+        redrawAll()
+    }
+
+    private func focusToolbarOption(offset: Int) {
+        let options = ToolbarOption.allCases
+        guard let currentIndex = options.firstIndex(of: focusedToolbarOption) else {
+            focusedToolbarOption = .window
+            return
+        }
+
+        let nextIndex = (currentIndex + offset + options.count) % options.count
+        let nextOption = options[nextIndex]
+        focusedToolbarOption = nextOption
+        if let mode = nextOption.mode {
+            self.mode = mode
+        } else {
+            redrawAll()
         }
     }
 
@@ -343,6 +440,41 @@ final class CaptureOverlayController {
 
     private func finishWindow(_ candidate: WindowCandidate) {
         finish(.window(candidate.frame, windowID: candidate.windowID))
+    }
+
+    private func updateWindowCandidates(_ candidates: [WindowCandidate], context: String) {
+        let selectableCandidates = candidates.filter(\.isLikelyOverlaySelectable)
+        windowCandidates = Self.collapsedByOwner(selectableCandidates)
+        DebugLog.write("overlay candidates context=\(context) screens=\(NSScreen.screens.count) rawCandidates=\(candidates.count) selectableCandidates=\(selectableCandidates.count) collapsedCandidates=\(windowCandidates.count) mouse=(\(NSEvent.mouseLocation.x),\(NSEvent.mouseLocation.y))")
+        redrawAll()
+    }
+
+    private static func collapsedByOwner(_ candidates: [WindowCandidate]) -> [WindowCandidate] {
+        var bestByOwner: [pid_t: WindowCandidate] = [:]
+        var ownerOrder: [pid_t] = []
+
+        for candidate in candidates {
+            if bestByOwner[candidate.ownerPID] == nil {
+                ownerOrder.append(candidate.ownerPID)
+                bestByOwner[candidate.ownerPID] = candidate
+                continue
+            }
+
+            guard let existing = bestByOwner[candidate.ownerPID] else {
+                continue
+            }
+
+            if candidate.selectionScore > existing.selectionScore {
+                bestByOwner[candidate.ownerPID] = candidate
+            }
+        }
+
+        let collapsed = ownerOrder.compactMap { bestByOwner[$0] }
+        let summary = collapsed.prefix(20).enumerated().map { index, candidate in
+            "#\(index + 1){pid=\(candidate.ownerPID),owner=\(candidate.ownerName ?? "nil"),title=\(candidate.title ?? "nil"),windowID=\(candidate.windowID),source=\(candidate.source.debugName),score=\(candidate.selectionScore)}"
+        }.joined(separator: " ")
+        DebugLog.write("overlay collapsed by owner count=\(collapsed.count) \(summary)")
+        return collapsed
     }
 
     private func closeWindows() {
@@ -588,6 +720,7 @@ final class CaptureOverlayView: NSView {
     private weak var controller: CaptureOverlayController?
     private var trackingAreaRef: NSTrackingArea?
     private var modeRects: [CaptureOverlayController.Mode: CGRect] = [:]
+    private var annotationRect = CGRect.zero
     private var sidebarPanelRect = CGRect.zero
     private var sidebarRowRects: [Int: CGRect] = [:]
     private var sidebarScrollOffset: CGFloat = 0
@@ -701,6 +834,11 @@ final class CaptureOverlayView: NSView {
         let localPoint = localPoint(from: globalPoint)
         if let mode = modeRects.first(where: { $0.value.contains(localPoint) })?.key {
             controller?.setMode(mode)
+            return
+        }
+
+        if annotationRect.contains(localPoint) {
+            controller?.toggleAnnotationMode()
             return
         }
 
@@ -829,6 +967,10 @@ final class CaptureOverlayView: NSView {
 
         for numberedCandidate in controller.numberedWindowCandidates {
             let candidate = numberedCandidate.candidate
+            guard candidate.isOnScreen == true else {
+                continue
+            }
+
             let local = localRect(from: candidate.frame).intersection(bounds)
             guard !local.isNull, local.width > 32, local.height > 32 else {
                 continue
@@ -1089,27 +1231,31 @@ final class CaptureOverlayView: NSView {
         }
 
         modeRects.removeAll()
+        annotationRect = .zero
 
         var x: CGFloat = 16
         let y = bounds.height - 44
         for mode in [CaptureOverlayController.Mode.window, .crop, .screen] {
             let isActive = controller.mode == mode
+            let isFocused = controller.focusedToolbarOption == CaptureOverlayController.ToolbarOption(mode: mode)
             let title = "\(mode.title) \(mode.shortcut)"
             let rect = drawChip(
                 title,
                 symbolName: mode.symbolName,
                 at: CGPoint(x: x, y: y),
-                isActive: isActive
+                isActive: isActive,
+                isFocused: isFocused
             )
             modeRects[mode] = rect
             x = rect.maxX + 8
         }
 
-        let annotationRect = drawChip(
+        annotationRect = drawChip(
             "Annotate A",
             symbolName: "pencil.and.outline",
             at: CGPoint(x: x, y: y),
             isActive: controller.annotationArmed,
+            isFocused: controller.focusedToolbarOption == .annotation,
             activeTint: .systemOrange
         )
         x = annotationRect.maxX + 8
@@ -1123,6 +1269,7 @@ final class CaptureOverlayView: NSView {
         symbolName: String,
         at point: CGPoint,
         isActive: Bool,
+        isFocused: Bool = false,
         activeTint: NSColor = .systemBlue
     ) -> CGRect {
         let symbolSize = CGSize(width: 16, height: 16)
@@ -1136,6 +1283,12 @@ final class CaptureOverlayView: NSView {
 
         (isActive ? activeTint.withAlphaComponent(0.88) : NSColor.black.withAlphaComponent(0.58)).setFill()
         NSBezierPath(roundedRect: rect, xRadius: 6, yRadius: 6).fill()
+        if isFocused {
+            NSColor.white.withAlphaComponent(0.88).setStroke()
+            let focusPath = NSBezierPath(roundedRect: rect.insetBy(dx: 1.5, dy: 1.5), xRadius: 5, yRadius: 5)
+            focusPath.lineWidth = 2
+            focusPath.stroke()
+        }
 
         if let symbol = NSImage(systemSymbolName: symbolName, accessibilityDescription: nil) {
             symbol.lockFocus()
@@ -1240,5 +1393,126 @@ private extension WindowCandidate {
         }
 
         return title
+    }
+
+    var isLikelyOverlaySelectable: Bool {
+        guard isLikelyUserSelectable else {
+            return false
+        }
+
+        guard let ownerApplication = NSRunningApplication(processIdentifier: ownerPID),
+              ownerApplication.activationPolicy == .regular,
+              !ownerApplication.isHidden else {
+            return false
+        }
+
+        if isOnScreen == true {
+            return true
+        }
+
+        if source == .screenCaptureKit {
+            return title?.isEmpty == false
+        }
+
+        guard title?.isEmpty == false else {
+            return false
+        }
+
+        return hasMatchingAccessibilityWindow
+    }
+
+    private var hasMatchingAccessibilityWindow: Bool {
+        guard PermissionCenter.accessibilityGranted else {
+            return false
+        }
+
+        let appElement = AXUIElementCreateApplication(ownerPID)
+        var value: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(
+            appElement,
+            kAXWindowsAttribute as CFString,
+            &value
+        ) == .success, let windows = value as? [AXUIElement] else {
+            return false
+        }
+
+        return windows.contains { window in
+            guard axBoolAttribute(kAXMinimizedAttribute, from: window) != true,
+                  let position = axPointAttribute(kAXPositionAttribute, from: window),
+                  let size = axSizeAttribute(kAXSizeAttribute, from: window),
+                  size.width >= 120,
+                  size.height >= 80 else {
+                return false
+            }
+
+            let rect = CoordinateConverter().appKitRect(
+                fromQuartzRect: CGRect(origin: position, size: size),
+                screenFrames: NSScreen.screens.map(\.frame)
+            )
+            return rect.approximatelyMatches(frame)
+        }
+    }
+
+    private func axBoolAttribute(_ attribute: String, from element: AXUIElement) -> Bool? {
+        var value: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(element, attribute as CFString, &value) == .success else {
+            return nil
+        }
+
+        return value as? Bool
+    }
+
+    private func axPointAttribute(_ attribute: String, from element: AXUIElement) -> CGPoint? {
+        var value: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(element, attribute as CFString, &value) == .success,
+              let value,
+              CFGetTypeID(value) == AXValueGetTypeID() else {
+            return nil
+        }
+
+        let axValue = unsafeDowncast(value, to: AXValue.self)
+        var point = CGPoint.zero
+        guard AXValueGetValue(axValue, .cgPoint, &point) else {
+            return nil
+        }
+
+        return point
+    }
+
+    private func axSizeAttribute(_ attribute: String, from element: AXUIElement) -> CGSize? {
+        var value: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(element, attribute as CFString, &value) == .success,
+              let value,
+              CFGetTypeID(value) == AXValueGetTypeID() else {
+            return nil
+        }
+
+        let axValue = unsafeDowncast(value, to: AXValue.self)
+        var size = CGSize.zero
+        guard AXValueGetValue(axValue, .cgSize, &size) else {
+            return nil
+        }
+
+        return size
+    }
+}
+
+private extension CGRect {
+    func approximatelyMatches(_ other: CGRect) -> Bool {
+        abs(origin.x - other.origin.x) <= 8
+            && abs(origin.y - other.origin.y) <= 8
+            && abs(width - other.width) <= 16
+            && abs(height - other.height) <= 16
+    }
+}
+
+private extension WindowCandidate.Source {
+    var debugName: String {
+        switch self {
+        case .coreGraphics:
+            "CG"
+        case .screenCaptureKit:
+            "SCK"
+        }
     }
 }

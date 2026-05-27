@@ -5,7 +5,10 @@ import Foundation
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let settings = SettingsStore()
-    private let hotKeyManager = HotKeyManager()
+    private let hotKeyManager = HotKeyManager(id: 1)
+    private let immediateCaptureHotKeyManager = HotKeyManager(id: 2)
+    private let cmdTabCaptureHotKeyManager = HotKeyManager(id: 3)
+    private let activationTracker = ApplicationActivationTracker()
     private let errorPresenter = ErrorPresenter()
 
     private var statusItem: NSStatusItem?
@@ -13,14 +16,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var captureCoordinator: CaptureCoordinator?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        DebugLog.write("applicationDidFinishLaunching bundle=\(Bundle.main.bundleIdentifier ?? "nil") path=\(Bundle.main.bundleURL.path) debugLog=\(DebugLog.url.path)")
         refreshActivationPolicy()
 
         settingsWindowController = SettingsWindowController(settings: settings)
-        captureCoordinator = CaptureCoordinator(settings: settings, errorPresenter: errorPresenter)
+        captureCoordinator = CaptureCoordinator(
+            settings: settings,
+            activationTracker: activationTracker,
+            errorPresenter: errorPresenter
+        )
 
         configureAppIcon()
         configureStatusItem()
         registerHotKey()
+        activationTracker.start()
         cleanupOldCaptures()
 
         NotificationCenter.default.addObserver(
@@ -35,6 +44,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         hotKeyManager.unregister()
+        immediateCaptureHotKeyManager.unregister()
+        cmdTabCaptureHotKeyManager.unregister()
+        activationTracker.stop()
     }
 
     private func configureStatusItem() {
@@ -79,11 +91,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func registerHotKey() {
         let hotKey = settings.hotKey
+        DebugLog.write("register default hotkey label=\(hotKey.label)")
         let registrationError = hotKeyManager.register(hotKey, handler: { [weak self] in
             self?.captureCoordinator?.captureNow()
         })
         if let registrationError {
             errorPresenter.showError(registrationError)
+        }
+
+        let immediateHotKey = settings.immediateCaptureHotKey
+        DebugLog.write("register current-space hotkey label=\(immediateHotKey.label) target=\(settings.currentSpaceCaptureTarget.rawValue)")
+        let immediateRegistrationError = immediateCaptureHotKeyManager.register(immediateHotKey, handler: { [weak self] in
+            self?.captureCoordinator?.captureCurrentSpaceImmediateScreenshot()
+        })
+        if let immediateRegistrationError {
+            errorPresenter.showError(immediateRegistrationError)
+        }
+
+        let cmdTabHotKey = settings.cmdTabCaptureHotKey
+        DebugLog.write("register cmd-tab hotkey label=\(cmdTabHotKey.label)")
+        let cmdTabRegistrationError = cmdTabCaptureHotKeyManager.register(cmdTabHotKey, handler: { [weak self] in
+            self?.captureCoordinator?.captureCmdTabImmediateScreenshot()
+        })
+        if let cmdTabRegistrationError {
+            errorPresenter.showError(cmdTabRegistrationError)
         }
     }
 

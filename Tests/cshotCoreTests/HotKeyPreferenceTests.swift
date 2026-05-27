@@ -51,6 +51,28 @@ final class HotKeyPreferenceTests: XCTestCase {
         )
     }
 
+    func testResolverCanUseImmediateCaptureDefaultPreset() {
+        XCTAssertEqual(
+            HotKeyPreference.resolve(
+                customHotKeyRaw: nil,
+                presetRaw: nil,
+                defaultPreset: HotKeyPreference.immediateCaptureDefaultPreset
+            ),
+            HotKeyPreset.controlOptionCommandTwo.hotKey
+        )
+    }
+
+    func testResolverCanUseCmdTabImmediateCaptureDefaultPreset() {
+        XCTAssertEqual(
+            HotKeyPreference.resolve(
+                customHotKeyRaw: nil,
+                presetRaw: nil,
+                defaultPreset: HotKeyPreference.cmdTabImmediateCaptureDefaultPreset
+            ),
+            HotKeyPreset.controlOptionCommandOne.hotKey
+        )
+    }
+
     func testValidationRejectsShortcutWithoutPrimaryModifier() {
         let hotKey = HotKey(
             keyCode: 1,

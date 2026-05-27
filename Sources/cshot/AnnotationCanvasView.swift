@@ -1036,15 +1036,6 @@ final class AnnotationCanvasView: NSView {
         let outline = NSBezierPath(rect: rect)
         outline.lineWidth = max(1, viewStrokeWidth(element, in: canvas) * 0.58)
         outline.stroke()
-
-        let label = NSAttributedString(
-            string: "Blur",
-            attributes: [
-                .font: NSFont.systemFont(ofSize: 11, weight: .bold),
-                .foregroundColor: NSColor.white.withAlphaComponent(0.82)
-            ]
-        )
-        label.draw(at: CGPoint(x: rect.minX + 6, y: rect.maxY - 18))
     }
 
     private func drawSelection(for element: AnnotationElement, in canvas: CGRect) {
@@ -1171,12 +1162,14 @@ final class AnnotationCanvasView: NSView {
         let size = viewFontSize(for: element, in: canvas)
         let font = textFont(size: size, name: element.fontName ?? "system")
         let lineHeight = font.ascender - font.descender + font.leading
-        let available = max(120, canvas.maxX - point.x - 10)
+        let text = element.text ?? ""
+        let measuredWidth = NSAttributedString(string: text, attributes: [.font: font]).size().width
+        let width = max(ceil(measuredWidth), 1)
         return CGRect(
             x: point.x,
             y: point.y - lineHeight,
-            width: available,
-            height: lineHeight
+            width: width,
+            height: ceil(lineHeight)
         )
     }
 

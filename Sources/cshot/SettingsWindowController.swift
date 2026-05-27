@@ -33,6 +33,7 @@ final class SettingsWindowController {
             }
             window.makeKeyAndOrderFront(nil)
             NSApp.activate()
+            DebugLog.write("settings window shown existing reason=\(reason)")
             return
         }
 
@@ -49,10 +50,13 @@ final class SettingsWindowController {
         newWindow.center()
         newWindow.minSize = Self.minimumContentSize
         newWindow.isReleasedWhenClosed = false
+        newWindow.level = .floating
+        newWindow.collectionBehavior = [.fullScreenAuxiliary, .moveToActiveSpace]
         newWindow.makeKeyAndOrderFront(nil)
         window = newWindow
 
         NSApp.activate()
+        DebugLog.write("settings window shown new reason=\(reason)")
     }
 }
 
@@ -61,6 +65,10 @@ struct SettingsView: View {
     let reason: SettingsWindowController.PresentationReason
     @State private var isRecordingHotKey = false
     @State private var hotKeyRecorderMessage: String?
+    @State private var isRecordingImmediateCaptureHotKey = false
+    @State private var immediateCaptureHotKeyRecorderMessage: String?
+    @State private var isRecordingCmdTabCaptureHotKey = false
+    @State private var cmdTabCaptureHotKeyRecorderMessage: String?
 
     var body: some View {
         ScrollView {
@@ -187,6 +195,133 @@ struct SettingsView: View {
                             .foregroundStyle(isRecordingHotKey ? Color.secondary : Color.green)
                             .fixedSize(horizontal: false, vertical: true)
                     }
+
+                    Text("Opens the window, crop, full-screen, and annotation picker.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            SettingsRow(title: "Current Space", symbolName: "bolt") {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 8) {
+                        Label(settings.immediateCaptureHotKey.label, systemImage: "keyboard")
+                            .font(.system(size: 13, weight: .semibold, design: .rounded))
+                            .lineLimit(1)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 7)
+                            .frame(minWidth: 188, alignment: .leading)
+                            .background(Color.primary.opacity(0.07))
+                            .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+
+                        Button {
+                            startImmediateCaptureHotKeyRecording()
+                        } label: {
+                            Label(isRecordingImmediateCaptureHotKey ? "Recording" : "Record", systemImage: "record.circle")
+                        }
+
+                        Button {
+                            resetImmediateCaptureHotKey()
+                        } label: {
+                            Image(systemName: "arrow.counterclockwise")
+                        }
+                        .accessibilityLabel("Reset immediate hotkey")
+                        .help("Reset immediate hotkey")
+                    }
+
+                    if isRecordingImmediateCaptureHotKey {
+                        HotKeyRecorderView(
+                            onRecord: { hotKey in
+                                finishImmediateCaptureHotKeyRecording(with: hotKey)
+                            },
+                            onCancel: {
+                                cancelImmediateCaptureHotKeyRecording()
+                            },
+                            onInvalid: { message in
+                                immediateCaptureHotKeyRecorderMessage = message
+                            }
+                        )
+                        .frame(width: SettingsRowMetrics.controlWidth, height: 36)
+                    }
+
+                    if let immediateCaptureHotKeyRecorderMessage {
+                        Text(immediateCaptureHotKeyRecorderMessage)
+                            .font(.caption)
+                            .foregroundStyle(isRecordingImmediateCaptureHotKey ? Color.secondary : Color.green)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    Picker("", selection: $settings.currentSpaceCaptureTargetRaw) {
+                        Label("Current App", systemImage: "macwindow")
+                            .tag(CurrentSpaceCaptureTarget.currentApp.rawValue)
+                        Label("Top App", systemImage: "rectangle.on.rectangle")
+                            .tag(CurrentSpaceCaptureTarget.topApp.rawValue)
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .frame(width: SettingsRowMetrics.controlWidth)
+
+                    Text("Captures either the current app or the top other visible app on this Space.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            SettingsRow(title: "Cmd-Tab Next", symbolName: "square.stack.3d.up") {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 8) {
+                        Label(settings.cmdTabCaptureHotKey.label, systemImage: "keyboard")
+                            .font(.system(size: 13, weight: .semibold, design: .rounded))
+                            .lineLimit(1)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 7)
+                            .frame(minWidth: 188, alignment: .leading)
+                            .background(Color.primary.opacity(0.07))
+                            .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+
+                        Button {
+                            startCmdTabCaptureHotKeyRecording()
+                        } label: {
+                            Label(isRecordingCmdTabCaptureHotKey ? "Recording" : "Record", systemImage: "record.circle")
+                        }
+
+                        Button {
+                            resetCmdTabCaptureHotKey()
+                        } label: {
+                            Image(systemName: "arrow.counterclockwise")
+                        }
+                        .accessibilityLabel("Reset Cmd-Tab hotkey")
+                        .help("Reset Cmd-Tab hotkey")
+                    }
+
+                    if isRecordingCmdTabCaptureHotKey {
+                        HotKeyRecorderView(
+                            onRecord: { hotKey in
+                                finishCmdTabCaptureHotKeyRecording(with: hotKey)
+                            },
+                            onCancel: {
+                                cancelCmdTabCaptureHotKeyRecording()
+                            },
+                            onInvalid: { message in
+                                cmdTabCaptureHotKeyRecorderMessage = message
+                            }
+                        )
+                        .frame(width: SettingsRowMetrics.controlWidth, height: 36)
+                    }
+
+                    if let cmdTabCaptureHotKeyRecorderMessage {
+                        Text(cmdTabCaptureHotKeyRecorderMessage)
+                            .font(.caption)
+                            .foregroundStyle(isRecordingCmdTabCaptureHotKey ? Color.secondary : Color.green)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    Text("Activates the next app in the Cmd-Tab rotation, captures its current top window, then pastes back.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
 
@@ -344,14 +479,21 @@ struct SettingsView: View {
     private var workflowPanel: some View {
         SettingsPanel(title: "Workflow", symbolName: "bolt") {
             SettingsRow(title: "Default", symbolName: "1.circle") {
-                Text("Trigger, choose a window/crop/full screen, then cshot pastes back automatically.")
+                Text("Trigger the default hotkey to choose a window, crop, full screen, or annotation.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            SettingsRow(title: "Annotate", symbolName: "pencil.and.outline") {
-                Text("Press A in the overlay before capture. Enter saves and pastes; Esc cancels.")
+            SettingsRow(title: "Current Space", symbolName: "bolt") {
+                Text("Trigger the current-space hotkey to capture the current or top visible app on this Space.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            SettingsRow(title: "Cmd-Tab Next", symbolName: "square.stack.3d.up") {
+                Text("Trigger the Cmd-Tab hotkey to capture the next app even when it lives on another Space.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -361,6 +503,10 @@ struct SettingsView: View {
 
     private func startHotKeyRecording() {
         isRecordingHotKey = true
+        isRecordingImmediateCaptureHotKey = false
+        isRecordingCmdTabCaptureHotKey = false
+        immediateCaptureHotKeyRecorderMessage = nil
+        cmdTabCaptureHotKeyRecorderMessage = nil
         hotKeyRecorderMessage = "Press a shortcut with Command, Control, or Option."
     }
 
@@ -379,6 +525,58 @@ struct SettingsView: View {
         settings.resetHotKeyToDefault()
         isRecordingHotKey = false
         hotKeyRecorderMessage = "Reset to \(settings.hotKey.label)."
+    }
+
+    private func startImmediateCaptureHotKeyRecording() {
+        isRecordingImmediateCaptureHotKey = true
+        isRecordingHotKey = false
+        isRecordingCmdTabCaptureHotKey = false
+        hotKeyRecorderMessage = nil
+        cmdTabCaptureHotKeyRecorderMessage = nil
+        immediateCaptureHotKeyRecorderMessage = "Press a shortcut with Command, Control, or Option."
+    }
+
+    private func finishImmediateCaptureHotKeyRecording(with hotKey: HotKey) {
+        settings.assignImmediateCaptureHotKey(hotKey)
+        isRecordingImmediateCaptureHotKey = false
+        immediateCaptureHotKeyRecorderMessage = "Saved \(hotKey.label)."
+    }
+
+    private func cancelImmediateCaptureHotKeyRecording() {
+        isRecordingImmediateCaptureHotKey = false
+        immediateCaptureHotKeyRecorderMessage = nil
+    }
+
+    private func resetImmediateCaptureHotKey() {
+        settings.resetImmediateCaptureHotKeyToDefault()
+        isRecordingImmediateCaptureHotKey = false
+        immediateCaptureHotKeyRecorderMessage = "Reset to \(settings.immediateCaptureHotKey.label)."
+    }
+
+    private func startCmdTabCaptureHotKeyRecording() {
+        isRecordingCmdTabCaptureHotKey = true
+        isRecordingHotKey = false
+        isRecordingImmediateCaptureHotKey = false
+        hotKeyRecorderMessage = nil
+        immediateCaptureHotKeyRecorderMessage = nil
+        cmdTabCaptureHotKeyRecorderMessage = "Press a shortcut with Command, Control, or Option."
+    }
+
+    private func finishCmdTabCaptureHotKeyRecording(with hotKey: HotKey) {
+        settings.assignCmdTabCaptureHotKey(hotKey)
+        isRecordingCmdTabCaptureHotKey = false
+        cmdTabCaptureHotKeyRecorderMessage = "Saved \(hotKey.label)."
+    }
+
+    private func cancelCmdTabCaptureHotKeyRecording() {
+        isRecordingCmdTabCaptureHotKey = false
+        cmdTabCaptureHotKeyRecorderMessage = nil
+    }
+
+    private func resetCmdTabCaptureHotKey() {
+        settings.resetCmdTabCaptureHotKeyToDefault()
+        isRecordingCmdTabCaptureHotKey = false
+        cmdTabCaptureHotKeyRecorderMessage = "Reset to \(settings.cmdTabCaptureHotKey.label)."
     }
 
     private func resetPermissions() {

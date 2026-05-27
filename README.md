@@ -56,16 +56,25 @@ The package script creates `dist/cshot.dmg`. The raw staged app is signed and ve
 
 ## Defaults
 
-- Hotkey: Control Option Command S by default, configurable in Settings
+- Default capture hotkey: Control Option Command S by default, configurable in Settings. It opens the capture overlay for window, crop, full-screen, and annotation workflows. Window mode lists selectable visible app windows across Spaces in the sidebar, one row per app.
+- Current-space immediate hotkey: Control Option Command 2 by default, configurable in Settings. It captures the top other visible app on the current Space by default; Settings can switch it to the current app.
+- Cmd-Tab immediate hotkey: Control Option Command 1 by default, configurable in Settings. It activates the next app in the Cmd-Tab rotation, captures its top window, then pastes back.
 - Storage: `/tmp/agent-shots`
 - Retention: 7 days
 - Injection: smart by app
 
+## Immediate Capture
+
+Press the current-space immediate hotkey when the target window is visible on the same Space. Press the Cmd-Tab immediate hotkey when the target is the next app in the Cmd-Tab rotation, even if that app is on another Space. Both paths save the image, restore the original target, and paste the configured payload without opening the capture overlay.
+
 ## Capture Overlay
 
-- **Window**: default mode. Use the sidebar to see every detected window by number and name. Click a row, click a highlighted window, or press its number to capture it.
+Press the default capture hotkey or open **Capture Now** from the menu bar when you want the picker workflow.
+
+- **Window**: default mode. Use the sidebar to see every detected visible app window by number and name. Click a row, click a highlighted window, press its number, or use Up/Down and Enter to capture it.
 - **Crop**: drag a region to capture a cropped image.
 - **Full**: click a display to capture the full screen.
+- Press Left/Right to move between Window, Crop, Full Screen, and Annotate controls.
 - Press `W`, `C`, or `F` to switch to Window, Crop, or Full Screen mode.
 - Press `A` before choosing a window, crop, or full screen capture to open the annotation editor.
 - Press `Space` to cycle modes or `Esc` to cancel. Other keys and mouse clicks are swallowed while the overlay is open.
