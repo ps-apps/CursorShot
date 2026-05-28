@@ -6,13 +6,16 @@ These notes are for maintainers. End users do not need to configure or understan
 
 - GitHub release access for `ps-apps/CursorShot`.
 - A Developer ID Application certificate for public distribution.
-- Apple notarization credentials:
-  - `APPLE_ID`
-  - `APPLE_TEAM_ID`
-  - `APPLE_APP_PASSWORD`
+- A `notarytool` Keychain profile for Apple notarization.
 - The Sparkle EdDSA private key in the maintainer Keychain under account `ed25519`, or a private-key file passed through `SPARKLE_ED_KEY_FILE`.
 
-The production public EdDSA key is configured in `Scripts/package_app.sh`. Keep the private key secure and never commit it.
+The production public EdDSA key is configured in `Scripts/package_app.sh`. Keep private keys and notarization credentials in Keychain or local ignored files only. Never commit them.
+
+Store notarization credentials once with:
+
+```sh
+xcrun notarytool store-credentials CursorShot-notary
+```
 
 ## Build Release Artifacts
 
@@ -20,9 +23,7 @@ The production public EdDSA key is configured in `Scripts/package_app.sh`. Keep 
 APP_VERSION="0.4.1" \
 APP_BUILD="15" \
 CODESIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)" \
-APPLE_ID="you@example.com" \
-APPLE_TEAM_ID="TEAMID" \
-APPLE_APP_PASSWORD="app-specific-password" \
+NOTARYTOOL_PROFILE="CursorShot-notary" \
 Scripts/package_app.sh
 ```
 
@@ -50,6 +51,18 @@ Upload these assets to the matching GitHub release:
 - `dist/CursorShot.dmg`
 - `dist/updates/CursorShot-$APP_VERSION.zip`
 - `dist/updates/appcast.xml`
+
+```sh
+git tag v0.4.1
+git push origin v0.4.1
+
+gh release create v0.4.1 \
+  dist/CursorShot.dmg \
+  dist/updates/CursorShot-0.4.1.zip \
+  dist/updates/appcast.xml \
+  --title "CursorShot 0.4.1" \
+  --notes "Signed and notarized CursorShot 0.4.1 release."
+```
 
 Release builds check this feed:
 

@@ -4,7 +4,7 @@ CursorShot is a local macOS screenshot utility for capturing a window, crop, ful
 
 ## Download
 
-Download the latest `CursorShot.dmg` from the [releases page](https://github.com/ps-apps/CursorShot/releases/latest).
+Download the latest signed and notarized `CursorShot.dmg` from the [releases page](https://github.com/ps-apps/CursorShot/releases/latest), or use the [direct download link](https://github.com/ps-apps/CursorShot/releases/latest/download/CursorShot.dmg).
 
 ```sh
 brew install --cask ps-apps/tap/cursorshot

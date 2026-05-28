@@ -20,6 +20,10 @@ BUILD_DIR="$STAGING_DIR/.swiftpm-build"
 UPDATES_DIR="$DIST_DIR/updates"
 DMG_ROOT="$STAGING_DIR/dmg-root"
 
+has_notarization_credentials() {
+  [[ -n "${NOTARYTOOL_PROFILE:-}" ]]
+}
+
 sign_path() {
   local path="$1"
   if [[ -n "${CODESIGN_IDENTITY:-}" ]]; then
@@ -31,11 +35,9 @@ sign_path() {
 
 notarize_file() {
   local path="$1"
-  if [[ -n "${APPLE_ID:-}" && -n "${APPLE_TEAM_ID:-}" && -n "${APPLE_APP_PASSWORD:-}" ]]; then
+  if [[ -n "${NOTARYTOOL_PROFILE:-}" ]]; then
     xcrun notarytool submit "$path" \
-      --apple-id "$APPLE_ID" \
-      --team-id "$APPLE_TEAM_ID" \
-      --password "$APPLE_APP_PASSWORD" \
+      --keychain-profile "$NOTARYTOOL_PROFILE" \
       --wait
   fi
 }
@@ -119,7 +121,7 @@ sign_path "$APP_DIR"
 
 codesign --verify --deep --strict --verbose=2 "$APP_DIR"
 
-if [[ -n "${APPLE_ID:-}" && -n "${APPLE_TEAM_ID:-}" && -n "${APPLE_APP_PASSWORD:-}" ]]; then
+if has_notarization_credentials; then
   NOTARY_ZIP="$STAGING_DIR/$APP_NAME-notary.zip"
   ditto -c -k --sequesterRsrc --keepParent "$APP_DIR" "$NOTARY_ZIP"
   notarize_file "$NOTARY_ZIP"
@@ -138,7 +140,7 @@ ditto "$APP_DIR" "$DMG_ROOT/$APP_NAME.app"
 ln -s /Applications "$DMG_ROOT/Applications"
 hdiutil create -volname "$APP_NAME" -srcfolder "$DMG_ROOT" -ov -format UDZO "$DIST_DIR/$APP_NAME.dmg"
 
-if [[ -n "${APPLE_ID:-}" && -n "${APPLE_TEAM_ID:-}" && -n "${APPLE_APP_PASSWORD:-}" ]]; then
+if has_notarization_credentials; then
   notarize_file "$DIST_DIR/$APP_NAME.dmg"
   xcrun stapler staple "$DIST_DIR/$APP_NAME.dmg"
 fi
