@@ -33,6 +33,13 @@ sign_path() {
   fi
 }
 
+sign_dmg() {
+  local path="$1"
+  if [[ -n "${CODESIGN_IDENTITY:-}" ]]; then
+    codesign --force --timestamp --sign "$CODESIGN_IDENTITY" "$path"
+  fi
+}
+
 notarize_file() {
   local path="$1"
   if [[ -n "${NOTARYTOOL_PROFILE:-}" ]]; then
@@ -139,6 +146,7 @@ mkdir -p "$DMG_ROOT"
 ditto "$APP_DIR" "$DMG_ROOT/$APP_NAME.app"
 ln -s /Applications "$DMG_ROOT/Applications"
 hdiutil create -volname "$APP_NAME" -srcfolder "$DMG_ROOT" -ov -format UDZO "$DIST_DIR/$APP_NAME.dmg"
+sign_dmg "$DIST_DIR/$APP_NAME.dmg"
 
 if has_notarization_credentials; then
   notarize_file "$DIST_DIR/$APP_NAME.dmg"
