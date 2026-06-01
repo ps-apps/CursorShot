@@ -8,6 +8,17 @@
       content="CursorShot is a local macOS screenshot utility for window, crop, full-screen, and annotated captures with automatic updates."
     >
     <title>CursorShot</title>
+    <link rel="icon" type="image/png" href="assets/cursorshot-icon.png">
+    <link rel="apple-touch-icon" href="assets/cursorshot-icon.png">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="CursorShot — macOS screenshot utility">
+    <meta property="og:description" content="Capture a window, crop, full screen, or annotated image from anywhere, then paste it back where you started.">
+    <meta property="og:url" content="https://ps-apps.github.io/CursorShot/">
+    <meta property="og:image" content="https://ps-apps.github.io/CursorShot/assets/cursorshot-icon.png">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="CursorShot — macOS screenshot utility">
+    <meta name="twitter:description" content="Capture a window, crop, full screen, or annotated image from anywhere, then paste it back where you started.">
+    <meta name="twitter:image" content="https://ps-apps.github.io/CursorShot/assets/cursorshot-icon.png">
     <style>
       :root {
         color-scheme: dark;
@@ -148,12 +159,20 @@
         color: #07120d;
       }
 
-      .install {
+      .install-row {
         margin-top: 18px;
+        display: flex;
+        align-items: stretch;
+        gap: 8px;
+        max-width: 100%;
+      }
+
+      .install {
         display: inline-flex;
         align-items: center;
         min-height: 44px;
-        max-width: 100%;
+        flex: 1 1 auto;
+        min-width: 0;
         padding: 0 14px;
         border: 1px solid var(--line);
         border-radius: 7px;
@@ -162,92 +181,62 @@
         font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
         font-size: 14px;
         overflow-x: auto;
+        white-space: nowrap;
       }
 
-      .preview {
+      .copy-btn {
+        flex: 0 0 auto;
+        min-height: 44px;
+        padding: 0 16px;
         border: 1px solid var(--line);
-        border-radius: 8px;
-        background: var(--panel);
-        overflow: hidden;
-        box-shadow: 0 24px 80px rgb(0 0 0 / 0.28);
+        border-radius: 7px;
+        background: var(--panel-strong);
+        color: var(--text);
+        font: inherit;
+        font-weight: 720;
+        font-size: 14px;
+        cursor: pointer;
+        transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
       }
 
-      .preview-bar {
+      .copy-btn:hover {
+        border-color: var(--accent);
+      }
+
+      .copy-btn.copied {
+        background: var(--accent);
+        border-color: transparent;
+        color: #07120d;
+      }
+
+      .showcase {
         display: flex;
         align-items: center;
-        gap: 8px;
-        height: 42px;
-        padding: 0 14px;
-        border-bottom: 1px solid var(--line);
+        justify-content: center;
       }
 
-      .dot {
-        width: 11px;
-        height: 11px;
-        border-radius: 999px;
-      }
-
-      .red { background: #ff5f57; }
-      .yellow { background: #ffbd2e; }
-      .green { background: #28c840; }
-
-      .preview-body {
-        padding: 26px;
-      }
-
-      .app-icon {
-        width: 104px;
-        height: 104px;
-        border-radius: 22px;
-        display: block;
-        margin-bottom: 24px;
-      }
-
-      .capture-frame {
-        border: 1px solid #3d464c;
-        border-radius: 8px;
-        min-height: 210px;
-        padding: 16px;
-        display: grid;
-        grid-template-rows: auto 1fr auto;
-        gap: 16px;
-        background:
-          linear-gradient(90deg, rgb(255 255 255 / 0.04) 1px, transparent 1px),
-          linear-gradient(rgb(255 255 255 / 0.04) 1px, transparent 1px),
-          #121619;
-        background-size: 28px 28px;
-      }
-
-      .toolbar {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 8px;
-      }
-
-      .tool {
-        min-height: 34px;
-        border-radius: 6px;
-        border: 1px solid #40484f;
-        background: #1f2529;
-      }
-
-      .tool.active {
-        border-color: var(--accent-2);
-        background: #16314c;
-      }
-
-      .target {
-        border: 2px solid var(--accent);
-        border-radius: 6px;
-        background: rgb(37 195 138 / 0.08);
-      }
-
-      .caption {
+      .icon-stage {
+        position: relative;
+        width: 100%;
+        max-width: 460px;
+        aspect-ratio: 1 / 1;
         display: flex;
-        justify-content: space-between;
-        gap: 16px;
-        color: var(--muted);
-        font-size: 13px;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background:
+          radial-gradient(120% 120% at 50% 28%, rgb(37 195 138 / 0.18), transparent 62%),
+          var(--panel);
+        box-shadow: 0 24px 80px rgb(0 0 0 / 0.32);
+        overflow: hidden;
+      }
+
+      .hero-icon {
+        width: 56%;
+        height: auto;
+        border-radius: 28%;
+        filter: drop-shadow(0 18px 40px rgb(0 0 0 / 0.45));
       }
 
       .section {
@@ -322,8 +311,8 @@
           font-size: 18px;
         }
 
-        .preview {
-          max-width: 520px;
+        .icon-stage {
+          max-width: 340px;
         }
 
         .section-inner,
@@ -362,31 +351,15 @@
             <a class="button primary" href="https://github.com/ps-apps/CursorShot/releases/latest/download/CursorShot.dmg">Download for macOS</a>
             <a class="button" href="https://github.com/ps-apps/CursorShot">View Source</a>
           </div>
-          <code class="install">brew install --cask ps-apps/tap/cursorshot</code>
+          <div class="install-row">
+            <code class="install" id="brew-cmd">brew install --cask ps-apps/tap/cursorshot</code>
+            <button class="copy-btn" type="button" data-copy-target="brew-cmd" aria-label="Copy install command">Copy</button>
+          </div>
         </div>
 
-        <div class="preview" aria-label="CursorShot capture preview">
-          <div class="preview-bar">
-            <span class="dot red"></span>
-            <span class="dot yellow"></span>
-            <span class="dot green"></span>
-          </div>
-          <div class="preview-body">
-            <img class="app-icon" src="assets/cursorshot-icon.png" alt="CursorShot app icon" width="104" height="104">
-            <div class="capture-frame">
-              <div class="toolbar" aria-hidden="true">
-                <span class="tool active"></span>
-                <span class="tool"></span>
-                <span class="tool"></span>
-                <span class="tool"></span>
-              </div>
-              <div class="target" aria-hidden="true"></div>
-              <div class="caption">
-                <span>Window</span>
-                <span>Crop</span>
-                <span>Annotate</span>
-              </div>
-            </div>
+        <div class="showcase">
+          <div class="icon-stage">
+            <img class="hero-icon" src="assets/cursorshot-icon.png" alt="CursorShot app icon" width="460" height="460">
           </div>
         </div>
       </section>
@@ -417,5 +390,22 @@
     <footer>
       MIT licensed. Built for macOS 14 and newer.
     </footer>
+    <script>
+      document.querySelectorAll(".copy-btn").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var target = document.getElementById(btn.dataset.copyTarget);
+          if (!target) return;
+          navigator.clipboard.writeText(target.textContent.trim()).then(function () {
+            var label = btn.textContent;
+            btn.textContent = "Copied";
+            btn.classList.add("copied");
+            setTimeout(function () {
+              btn.textContent = label;
+              btn.classList.remove("copied");
+            }, 1500);
+          });
+        });
+      });
+    </script>
   </body>
 </html>
