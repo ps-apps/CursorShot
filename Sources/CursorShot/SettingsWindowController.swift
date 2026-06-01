@@ -80,9 +80,9 @@ struct SettingsView: View {
                         permissionSetupBlock
                     }
 
+                    permissionsPanel
                     capturePanel
                     generalPanel
-                    permissionsPanel
                     storagePanel
                 }
                 .padding(20)
