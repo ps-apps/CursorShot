@@ -20,8 +20,8 @@ xcrun notarytool store-credentials CursorShot-notary
 ## Build Release Artifacts
 
 ```sh
-APP_VERSION="0.4.1" \
-APP_BUILD="15" \
+APP_VERSION="0.4.2" \
+APP_BUILD="16" \
 CODESIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)" \
 NOTARYTOOL_PROFILE="CursorShot-notary" \
 Scripts/package_app.sh
@@ -34,9 +34,15 @@ The script creates:
 
 ## Generate Appcast
 
+Remove older version zips from `dist/updates/` first, leaving only the new
+`CursorShot-$APP_VERSION.zip`. `generate_appcast` rewrites the download URL of
+every zip still present to the current `RELEASE_TAG`, which would point old
+versions at the wrong release (and emit unwanted binary deltas).
+
 ```sh
-APP_VERSION="0.4.1" \
-RELEASE_TAG="v0.4.1" \
+rm -f dist/updates/CursorShot-*.zip.bak  # keep only the new version's zip
+APP_VERSION="0.4.2" \
+RELEASE_TAG="v0.4.2" \
 Scripts/generate_appcast.sh
 ```
 
@@ -53,15 +59,15 @@ Upload these assets to the matching GitHub release:
 - `dist/updates/appcast.xml`
 
 ```sh
-git tag v0.4.1
-git push origin v0.4.1
+git tag v0.4.2
+git push origin v0.4.2
 
-gh release create v0.4.1 \
+gh release create v0.4.2 \
   dist/CursorShot.dmg \
-  dist/updates/CursorShot-0.4.1.zip \
+  dist/updates/CursorShot-0.4.2.zip \
   dist/updates/appcast.xml \
-  --title "CursorShot 0.4.1" \
-  --notes "Signed and notarized CursorShot 0.4.1 release."
+  --title "CursorShot 0.4.2" \
+  --notes "Signed and notarized CursorShot 0.4.2 release."
 ```
 
 Release builds check this feed:
