@@ -20,8 +20,8 @@ xcrun notarytool store-credentials CursorShot-notary
 ## Build Release Artifacts
 
 ```sh
-APP_VERSION="0.4.2" \
-APP_BUILD="16" \
+APP_VERSION="0.4.3" \
+APP_BUILD="17" \
 CODESIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)" \
 NOTARYTOOL_PROFILE="CursorShot-notary" \
 Scripts/package_app.sh
@@ -34,17 +34,24 @@ The script creates:
 
 ## Generate Appcast
 
-Remove older version zips from `dist/updates/` first, leaving only the new
-`CursorShot-$APP_VERSION.zip`. `generate_appcast` rewrites the download URL of
-every zip still present to the current `RELEASE_TAG`, which would point old
-versions at the wrong release (and emit unwanted binary deltas).
-
 ```sh
-rm -f dist/updates/CursorShot-*.zip.bak  # keep only the new version's zip
-APP_VERSION="0.4.2" \
-RELEASE_TAG="v0.4.2" \
+APP_VERSION="0.4.3" \
+RELEASE_TAG="v0.4.3" \
 Scripts/generate_appcast.sh
 ```
+
+`generate_appcast` keeps a cache of every archive it has seen, applies the
+current `RELEASE_TAG` download-url-prefix to *all* of them, and emits binary
+deltas between consecutive builds. After running it, hand-fix
+`dist/updates/appcast.xml`:
+
+- Restore each older version's `<enclosure url>` to its own tag (only the
+  newest item belongs under the current `RELEASE_TAG`). The `edSignature` is
+  over the file contents, so changing the URL does not invalidate it.
+- Delete the `<sparkle:deltas>` block (we ship only full zips; otherwise the
+  `.delta` files must be uploaded to the release too).
+
+Then upload only the new `CursorShot-$APP_VERSION.zip`, the DMG, and `appcast.xml`.
 
 The script signs the appcast using the private EdDSA key and writes:
 
@@ -59,15 +66,15 @@ Upload these assets to the matching GitHub release:
 - `dist/updates/appcast.xml`
 
 ```sh
-git tag v0.4.2
-git push origin v0.4.2
+git tag v0.4.3
+git push origin v0.4.3
 
-gh release create v0.4.2 \
+gh release create v0.4.3 \
   dist/CursorShot.dmg \
-  dist/updates/CursorShot-0.4.2.zip \
+  dist/updates/CursorShot-0.4.3.zip \
   dist/updates/appcast.xml \
-  --title "CursorShot 0.4.2" \
-  --notes "Signed and notarized CursorShot 0.4.2 release."
+  --title "CursorShot 0.4.3" \
+  --notes "Signed and notarized CursorShot 0.4.3 release."
 ```
 
 Release builds check this feed:
