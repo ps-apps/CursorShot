@@ -81,6 +81,7 @@ struct SettingsView: View {
                     }
 
                     capturePanel
+                    generalPanel
                     permissionsPanel
                     storagePanel
                 }
@@ -259,6 +260,23 @@ struct SettingsView: View {
                 Toggle("", isOn: $settings.captureSoundsEnabled)
                     .toggleStyle(CompactSwitchToggleStyle())
                     .labelsHidden()
+            }
+        }
+    }
+
+    private var generalPanel: some View {
+        SettingsPanel(title: "General", symbolName: "gearshape") {
+            InlineSettingsRow(
+                title: "Open at login",
+                symbolName: "power",
+                helpText: "Automatically launch CursorShot when you log in or restart your Mac. You can also manage this in System Settings → General → Login Items."
+            ) {
+                Toggle("", isOn: Binding(
+                    get: { settings.launchAtLogin },
+                    set: { settings.setLaunchAtLogin($0) }
+                ))
+                .toggleStyle(CompactSwitchToggleStyle())
+                .labelsHidden()
             }
         }
     }

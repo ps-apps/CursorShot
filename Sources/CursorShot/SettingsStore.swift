@@ -49,6 +49,11 @@ final class SettingsStore: ObservableObject {
         didSet { persist("annotationModeEnabled", value: annotationModeEnabled) }
     }
 
+    /// Reflects the actual `SMAppService` login-item status. Update through
+    /// `setLaunchAtLogin(_:)` rather than assigning directly so the system
+    /// registration stays in sync.
+    @Published private(set) var launchAtLogin: Bool
+
     private let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
@@ -78,8 +83,27 @@ final class SettingsStore: ObservableObject {
         cropModeEnabled = defaults.object(forKey: "cropModeEnabled") as? Bool ?? true
         fullScreenModeEnabled = defaults.object(forKey: "fullScreenModeEnabled") as? Bool ?? true
         annotationModeEnabled = defaults.object(forKey: "annotationModeEnabled") as? Bool ?? true
+        launchAtLogin = LaunchAtLoginManager.isEnabled
         let debugMessage = "settings loaded defaultShortcut=\(defaultCaptureHotKey.label) cmdTabShortcut=\(cmdTabQuickCaptureHotKey.label) currentSpaceShortcut=\(currentSpaceQuickCaptureHotKey.label) currentSpaceTarget=\(currentSpaceCaptureTarget.rawValue) modes crop=\(cropModeEnabled) fullScreen=\(fullScreenModeEnabled) annotation=\(annotationModeEnabled)"
         DebugLog.write(debugMessage)
+    }
+
+    /// Registers/unregisters the login item and reflects the resulting system state.
+    func setLaunchAtLogin(_ enabled: Bool) {
+        let resolved = LaunchAtLoginManager.setEnabled(enabled)
+        if launchAtLogin != resolved {
+            launchAtLogin = resolved
+        }
+        defaults.set(resolved, forKey: "launchAtLogin")
+        notifyChanged()
+    }
+
+    /// Re-reads the actual login-item status (the user can change it from System Settings).
+    func refreshLaunchAtLogin() {
+        let resolved = LaunchAtLoginManager.isEnabled
+        if launchAtLogin != resolved {
+            launchAtLogin = resolved
+        }
     }
 
     var effectiveStorageDirectory: String {

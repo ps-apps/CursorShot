@@ -32,6 +32,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         registerHotKeys()
         activationTracker.start()
         cleanupOldCaptures()
+        applyDefaultLaunchAtLoginIfNeeded()
 
         NotificationCenter.default.addObserver(
             self,
@@ -124,6 +125,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         defaultCaptureHotKeyManager.unregister()
         cmdTabQuickCaptureHotKeyManager.unregister()
         currentSpaceQuickCaptureHotKeyManager.unregister()
+    }
+
+    /// Enrolls the app as a login item once, the first time a build with this
+    /// feature runs (new installs and existing installs that auto-update alike).
+    /// After this one-time default, the user's choice in Settings is respected.
+    private func applyDefaultLaunchAtLoginIfNeeded() {
+        let key = "didApplyDefaultLaunchAtLogin"
+        guard !UserDefaults.standard.bool(forKey: key) else {
+            settings.refreshLaunchAtLogin()
+            return
+        }
+        UserDefaults.standard.set(true, forKey: key)
+        settings.setLaunchAtLogin(true)
+        DebugLog.write("applied default launch-at-login enabled=\(settings.launchAtLogin)")
     }
 
     private func cleanupOldCaptures() {

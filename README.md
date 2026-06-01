@@ -31,6 +31,10 @@ tccutil reset ScreenCapture io.github.ps-apps.cursorshot
 
 Then reopen CursorShot and grant both permissions again. The Settings window also includes reset and privacy-pane buttons.
 
+## Launch at Login
+
+CursorShot can open automatically when you log in or restart. New installs are enrolled by default; toggle **Open at login** in Settings (General), or manage it in System Settings → General → Login Items.
+
 ## Shortcuts
 
 - Open Picker: Command Shift S by default, configurable in Settings.
